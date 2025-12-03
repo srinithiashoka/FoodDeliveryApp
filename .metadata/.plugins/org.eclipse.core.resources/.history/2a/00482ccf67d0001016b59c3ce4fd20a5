@@ -1,0 +1,125 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.foodapp.dao.impl.OrderDAOImpl" %>
+<%@ page import="com.foodapp.model.Order" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+
+    Order order = null;
+    String orderParam = request.getParameter("orderId");
+    OrderDAOImpl orderDAO = new OrderDAOImpl();
+
+    if (orderParam != null) {
+        try {
+            int orderId = Integer.parseInt(orderParam);
+            order = orderDAO.getOrderById(orderId);
+        } catch (NumberFormatException e) {
+            order = null;
+        }
+    } else if (user != null) {
+        order = orderDAO.getLastOrderByUserId(user.getUserId());
+    }
+
+    // Determine status color
+    String statusColor = "black";
+    if(order != null){
+        switch(order.getStatus().toLowerCase()){
+            case "pending": statusColor = "orange"; break;
+            case "completed": statusColor = "green"; break;
+            case "cancelled": statusColor = "red"; break;
+        }
+    }
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Track Order - FoodHub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/menu.css">
+
+    <style>
+        .order-container { background:#fff; padding:20px; margin:30px auto; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); width:90%; max-width:600px;}
+        .order-row { display:flex; justify-content:space-between; margin:10px 0; font-size:1rem;}
+        .btn-back { margin-top:20px; padding:10px 18px; background:#ff4757; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; transition:background 0.3s; }
+        .btn-back:hover { background:#ff6b81; }
+        #toast { visibility:hidden; min-width:180px; max-width:300px; background-color:#2ed573; color:white; text-align:center; border-radius:8px; padding:12px 16px; position:fixed; z-index:9999; top:20px; right:20px; font-size:14px; opacity:0; transition: opacity 0.3s, visibility 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+        #toast.show { visibility:visible; opacity:1; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if(user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp">
+                        <i class="fas fa-shopping-cart cart-icon"></i>
+                    </a>
+                    <span class="cart-badge"><%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<h1 style="text-align:center; color:#ff4757; margin-top:30px;">Track Your Order</h1>
+
+<div class="order-container">
+<% if(order != null) { %>
+    <div class="order-row"><span>Order ID:</span><span><%= order.getOrderId() %></span></div>
+    <div class="order-row"><span>Restaurant ID:</span><span><%= order.getRestaurantId() %></span></div>
+    <div class="order-row"><span>Order Date:</span><span><%= order.getOrderDate() %></span></div>
+    <div class="order-row"><span>Total Amount:</span><span>₹<%= String.format("%.2f", order.getTotalAmount()) %></span></div>
+    <div class="order-row"><span>Payment Mode:</span><span><%= order.getPaymentMode() %></span></div>
+    <div class="order-row"><span>Status:</span><span style="color:<%= statusColor %>; font-weight:bold;"><%= order.getStatus() %></span></div>
+
+    <button class="btn-back" onclick="window.location.href='home.jsp'">Back to Home</button>
+<% } else { %>
+    <p style="text-align:center; color:red;">Order not found!</p>
+    <button class="btn-back" onclick="window.location.href='home.jsp'">Go Home</button>
+<% } %>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved</p>
+    </div>
+</footer>
+
+<script>
+<% if(order != null){ %>
+    const toast = document.getElementById('toast');
+    toast.innerText = "Tracking Order #<%= order.getOrderId() %>";
+    toast.className = 'show';
+    setTimeout(() => { toast.className = toast.className.replace('show',''); }, 3000);
+<% } %>
+</script>
+
+</body>
+</html>

@@ -1,0 +1,248 @@
+@charset "UTF-8";
+
+/* =======================
+   Menu Page Styles
+======================= */
+.menu-container {
+    padding: 50px 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.menu-image {
+    background: #fff;
+    padding: 8px;
+    border-radius: 12px;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+}
+
+.menu-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.menu-content {
+    flex: 1;
+}
+
+.menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.menu-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #ff4757;
+}
+
+.menu-description {
+    margin: 5px 0 8px 0;
+    color: #555;
+}
+
+.menu-price {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* =======================
+   Quantity Controls
+======================= */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap; /* wrap on smaller screens */
+}
+
+.quantity-input-display {
+    width: 40px;
+    height: 36px;
+    text-align: center;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.qty-btn {
+    border: none;
+    background: #ddd;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.qty-btn:hover {
+    background: #bbb;
+}
+
+.qty-btn.clear {
+    background: #ff6b81;
+    color: #fff;
+    font-size: 0.85rem;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-add {
+    background: #2ed573;
+    color: white;
+    border: none;
+    padding: 0 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: background 0.3s;
+    height: 36px; /* same height as clear button */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-add:hover {
+    background: #26c35e;
+}
+
+/* Make quantity buttons, Add and Clear same height */
+.qty-btn.clear, .btn-add {
+    height: 36px;
+}
+
+/* =======================
+   Back link & Title
+======================= */
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    color: #0a3d62;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.menu-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #ff4757;
+}
+
+.no-menu-items {
+    text-align: center;
+    color: red;
+    width: 100%;
+}
+
+/* =======================
+   Toast Notification Below Back Link (Right Side)
+======================= */
+#toast {
+    visibility: hidden;
+    min-width: 200px;
+    max-width: 250px;
+    background-color: #2ed573;
+    color: white;
+    text-align: center;
+    border-radius: 8px;
+    padding: 10px 14px;
+    position: absolute;       /* absolute relative to container */
+    z-index: 1000;
+    top: 90px;                /* space below Back link */
+    right: 20px;              /* space from right edge */
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+#toast.show {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+
+/* =======================
+   Cart badge
+======================= */
+.cart-icon-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-left: 15px;
+}
+
+.cart-icon-wrapper img {
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+}
+
+.cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ff4757;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 7px;
+    border-radius: 50%;
+}
+
+/* =======================
+   Responsive
+======================= */
+@media(max-width: 767px) {
+    .menu-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .menu-image {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 12px;
+    }
+
+    .quantity-controls {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .btn-add, .qty-btn.clear {
+        flex: 1 1 100%; /* full width on small screens */
+        text-align: center;
+    }
+}

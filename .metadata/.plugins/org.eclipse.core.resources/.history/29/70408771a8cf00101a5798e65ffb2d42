@@ -1,0 +1,35 @@
+switch (action) {
+    case "add":
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+        if (menuIdStr == null || quantityStr == null) {
+            out.write("{\"status\":\"error\",\"message\":\"Invalid parameters\"}");
+            return;
+        }
+        int menuId = Integer.parseInt(menuIdStr);
+        int quantity = Integer.parseInt(quantityStr);
+        boolean success = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+        if (success) {
+            out.write("{\"status\":\"success\",\"message\":\"Cart updated\"}");
+        } else {
+            out.write("{\"status\":\"error\",\"message\":\"Cart update failed\"}");
+        }
+        break;
+
+    case "delete":
+        String menuIdDelStr = request.getParameter("menuId");
+        if (menuIdDelStr == null) {
+            out.write("{\"status\":\"error\",\"message\":\"Invalid parameters\"}");
+            return;
+        }
+        int menuIdDel = Integer.parseInt(menuIdDelStr);
+        boolean removed = cartDAO.removeFromCart(userId, menuIdDel);
+        if (removed) {
+            out.write("{\"status\":\"success\",\"message\":\"Item removed\"}");
+        } else {
+            out.write("{\"status\":\"error\",\"message\":\"Failed to remove item\"}");
+        }
+        break;
+
+    // keep existing "clear", "view", "count" cases
+}

@@ -1,0 +1,267 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants;
+
+    if ((location != null && !location.isEmpty()) || (restaurantName != null && !restaurantName.isEmpty())) {
+        restaurants = dao.searchRestaurants(location, restaurantName);
+    } else {
+        restaurants = dao.getActiveRestaurants();
+    }
+
+    User user = (User) session.getAttribute("user");
+    Integer cartCount = (Integer) session.getAttribute("cartCount");
+    if (cartCount == null) cartCount = 0;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FoodHub - Food Delivery App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css"> 
+
+  
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart ( <%= cartCount %> items )">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png"
+                             alt="Shopping Cart" style="width: 28px; height: 28px;">
+                    </a>
+                    <% if (cartCount > 0) { %>
+                        <span class="cart-badge"><%= cartCount %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-text-box">
+            <h1>Order food from your favourite restaurants near you</h1>
+            <p>Get your food delivered fast</p>
+        </div>
+
+        <div class="search-box">
+            <form action="home.jsp" method="get" class="search-form">
+                <div class="input-wrapper">
+                    <i class="fa fa-map-marker-alt"></i>
+                    <input type="text" name="location" placeholder="Enter your location (e.g., Coimbatore)"
+                           value="<%= location != null ? location : "" %>">
+                </div>
+
+                <div class="input-wrapper">
+                    <i class="fa fa-search"></i>
+                    <input type="text" name="restaurant" placeholder="Search restaurants (e.g., Domino's)"
+                           value="<%= restaurantName != null ? restaurantName : "" %>">
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="fa fa-search"></i> Find Food
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIES SECTION -->
+<section class="categories">
+    <div class="container">
+        <h2>Popular Categories</h2>
+        <div class="category-grid">
+            <a href="home.jsp?restaurant=pizza" class="category-card" style="text-decoration:none;">
+                <img src="images/pizzas.jpg" alt="Pizza"><p>Pizza</p>
+            </a>
+            <a href="home.jsp?restaurant=biryani" class="category-card" style="text-decoration:none;">
+                <img src="images/briyani.jpeg" alt="Biryani"><p>Biryani</p>
+            </a>
+            <a href="home.jsp?restaurant=burger" class="category-card" style="text-decoration:none;">
+                <img src="images/burgers.jpg" alt="Burgers"><p>Burgers</p>
+            </a>
+            <a href="home.jsp?restaurant=cake" class="category-card" style="text-decoration:none;">
+                <img src="images/cake.jpg" alt="Cakes"><p>Cakes</p>
+            </a>
+            <a href="home.jsp?location=coimbatore" class="category-card" style="text-decoration:none;">
+                <img src="images/meals.jpeg" alt="Meals"><p>Meals</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- RESTAURANTS SECTION -->
+<section class="restaurants">
+    <div class="container">
+        <h2>
+            <% if (location != null && !location.isEmpty()) { %>
+                Restaurants in <%= location %>
+            <% } else if (restaurantName != null && !restaurantName.isEmpty()) { %>
+                Search Results for "<%= restaurantName %>"
+            <% } else { %>
+                Top Restaurants Near You
+            <% } %>
+        </h2>
+        
+        <% if (restaurants != null && !restaurants.isEmpty()) { %>
+            <div class="search-results-info">
+                <span>Found <%= restaurants.size() %> restaurant<%= restaurants.size() != 1 ? "s" : "" %></span>
+                <span>Cart: <%= cartCount %> item<%= cartCount != 1 ? "s" : "" %></span>
+            </div>
+        <% } %>
+
+        <div class="restaurant-grid">
+            <% if (restaurants != null && !restaurants.isEmpty()) {
+                for (Restaurant r : restaurants) { %>
+            <a href="menu?action=byRestaurant&restaurantId=<%= r.getRestaurantId() %>" class="restaurant-card-link">
+                <div class="restaurant-card">
+                    <% String imgPath = r.getImagePath();
+                       if (imgPath == null || imgPath.isEmpty()) {
+                           imgPath = "images/restaurants/default.jpg";
+                       } %>
+                    <img src="<%= imgPath %>" alt="<%= r.getName() %>"
+                         onerror="this.src='images/restaurants/default.jpg'"
+                         style="width:100%; height:200px; object-fit:cover;">
+                    
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+                        <div class="restaurant-meta">
+                            <span class="cuisine" style="color:#e74c3c; font-weight:500;">
+                                <%= r.getCuisineType() %>
+                            </span>
+                            <span class="delivery-time" style="color:#27ae60;">
+                                <%= r.getDeliveryTime() %> 
+                            </span>
+                        </div>
+                        <p class="address" style="font-size:0.9em; color:#666; margin:8px 0;">
+                            <%= r.getAddress().length() > 50 ? r.getAddress().substring(0, 50) + "..." : r.getAddress() %>
+                        </p>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#f39c12; font-weight:500;">★★★★☆</span>
+                            <span style="font-size:0.85em; color:#888;">124 orders</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <%  }
+            } else { %>
+                <div class="no-results">
+                    <i class="fa fa-search"></i>
+                    <h3>No restaurants found</h3>
+                    <p>Try adjusting your search terms or location. Popular options:</p>
+                    <div style="margin-top:20px;">
+                        <a href="home.jsp?location=coimbatore" style="margin-right:15px;">Coimbatore</a>
+                        <a href="home.jsp?restaurant=pizza" style="margin-right:15px;">Pizza</a>
+                        <a href="home.jsp">All Restaurants</a>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+const isLoggedIn = <%= (user != null) ? "true" : "false" %>;
+const contextPath = "<%=request.getContextPath()%>";
+const initialCartCount = <%= cartCount %>;
+
+// Enhanced cart badge update with real-time sync
+function updateCartBadge(count) {
+    const badge = document.querySelector(".cart-badge");
+    const cartLink = document.querySelector(".cart-icon-wrapper a");
+    
+    if (count !== undefined) {
+        if (count > 0) {
+            if (!badge) {
+                const newBadge = document.createElement('span');
+                newBadge.className = 'cart-badge';
+                newBadge.textContent = count;
+                document.querySelector(".cart-icon-wrapper").appendChild(newBadge);
+            } else {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            }
+            cartLink.title = `View Cart (${count} items)`;
+        } else {
+            if (badge) badge.remove();
+            cartLink.title = 'View Cart (0 items)';
+        }
+    } else {
+        // Fetch latest count
+        fetch(contextPath + "/cart?action=viewcount", { 
+            credentials: 'same-origin',
+            cache: 'no-cache'
+        })
+        .then(res => res.json())
+        .then(data => updateCartBadge(data.count))
+        .catch(err => console.error('Cart sync error:', err));
+    }
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartBadge(initialCartCount);
+    
+    // Auto-sync cart every 30 seconds
+    setInterval(() => updateCartBadge(), 30000);
+    
+    // Form enhancement - prevent empty searches
+    const searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            const location = this.querySelector('input[name="location"]').value.trim();
+            const restaurant = this.querySelector('input[name="restaurant"]').value.trim();
+            if (!location && !restaurant) {
+                e.preventDefault();
+                alert('Please enter location or restaurant name');
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

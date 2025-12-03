@@ -1,0 +1,69 @@
+package com.foodapp.servlet;
+
+import java.io.IOException;
+import com.foodapp.dao.UserDAO;
+import com.foodapp.dao.impl.UserDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+
+@WebServlet("/user")
+public class UserServlet extends HttpServlet {
+    private UserDAO userDAO = new UserDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        if ("register".equalsIgnoreCase(action)) {
+            registerUser(request, response);
+        } else if ("login".equalsIgnoreCase(action)) {
+            loginUser(request, response);
+        }
+    }
+
+    private void registerUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        User user = new User();
+        user.setUsername(request.getParameter("username"));
+        user.setPassword(request.getParameter("password"));
+        user.setEmail(request.getParameter("email"));
+        user.setPhone(request.getParameter("phone"));
+        user.setAddress(request.getParameter("address"));
+        user.setRole(request.getParameter("role"));
+
+        boolean success = userDAO.addUser(user);
+        if (success) {
+            response.sendRedirect("login.jsp?msg=User registered successfully");
+        } else {
+            response.sendRedirect("signup.jsp?error=Failed to register user");
+        }
+    }
+
+    private void loginUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+
+        User user = userDAO.getUserByUsername(username);
+
+        if (user == null) {
+            // User does not exist → redirect to signup page
+            response.sendRedirect("signup.jsp?msg=Username not found, please sign up");
+        } else if (user.getPassword().equals(password)) {
+            // Password correct → login successful
+            HttpSession session = request.getSession();
+            session.setAttribute("user", user);
+            session.setAttribute("userId", user.getUserId()); // important for menu.jsp checks
+            response.sendRedirect("menu?action=list"); // loads all menus
+
+        } else {
+            // Wrong password → redirect back to login with error
+            response.sendRedirect("login.jsp?error=Incorrect password");
+        }
+    }
+}

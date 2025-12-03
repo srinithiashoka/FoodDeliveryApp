@@ -1,0 +1,119 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.model.User"%>
+
+<%
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - FoodHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <style>
+        .quantity-controls { display: flex; align-items: center; gap: 4px; margin-top:10px; }
+        .quantity-input-display { width: 30px; text-align:center; font-size:0.85rem; }
+        .qty-btn { cursor:pointer; padding: 3px 6px; background:#ddd; border:none; border-radius:4px; }
+        .qty-btn:hover { background:#bbb; }
+        #toast { visibility: hidden; min-width: 200px; background:#333; color:#fff; text-align:center; border-radius:4px; padding:8px; position:fixed; top:20px; right:20px; z-index:1000; opacity:0; transition:0.5s;}
+        #toast.show { visibility: visible; opacity:1; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container navbar">
+        <div class="logo"><i class="fa-solid fa-motorcycle"></i> FoodHub</div>
+        <div class="nav-actions">
+            <% if(user == null) { %>
+                <button onclick="location.href='login.jsp'">Login</button>
+            <% } else { %>
+                <span>Welcome, <%= user.getUsername() %></span>
+            <% } %>
+            <a href="cart.jsp" class="cart-link">Cart (<span class="cart-badge"><%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %></span>)</a>
+        </div>
+    </div>
+</header>
+
+<div class="container menu-container">
+    <h2>Menu</h2>
+
+    <% if(menuList != null && !menuList.isEmpty()) {
+        for(Menu m : menuList) { %>
+    <div class="menu-item-wrapper">
+        <h3><%= m.getItemName() %> - ₹<%= m.getPrice() %></h3>
+        <p><%= m.getDescription() %></p>
+
+        <div class="quantity-controls">
+            <button class="qty-btn decrease">−</button>
+            <input type="text" class="quantity-input-display" value="1" readonly>
+            <button class="qty-btn increase">+</button>
+            <button class="qty-btn add-to-cart">Add</button>
+        </div>
+        <input type="hidden" class="menu-id" value="<%= m.getMenuId() %>">
+    </div>
+    <% }} else { %>
+        <p>No menu items available.</p>
+    <% } %>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const isLoggedIn = <%= (userId != null) ? "true" : "false" %>;
+
+function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'),2500);
+}
+
+function updateCartBadge(){
+    fetch("<%=request.getContextPath()%>/cart?action=viewCount")
+        .then(res => res.json())
+        .then(data => {
+            document.querySelector(".cart-badge").textContent = data.count;
+        });
+}
+
+document.querySelectorAll(".menu-item-wrapper").forEach(item=>{
+    const decrease = item.querySelector(".decrease");
+    const increase = item.querySelector(".increase");
+    const addBtn = item.querySelector(".add-to-cart");
+    const input = item.querySelector(".quantity-input-display");
+    const menuId = item.querySelector(".menu-id").value;
+
+    decrease.onclick = ()=>{ if(parseInt(input.value) > 1) input.value--; };
+    increase.onclick = ()=>{ input.value = parseInt(input.value) + 1; };
+
+    addBtn.onclick = ()=>{
+        if(!isLoggedIn){
+            window.location.href = "<%=request.getContextPath()%>/login.jsp";
+            return;
+        }
+        const qty = parseInt(input.value);
+        fetch("<%=request.getContextPath()%>/cart", {
+            method:"POST",
+            headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+            body:`action=add&menuId=${menuId}&quantity=${qty}`
+        })
+        .then(r=>r.json())
+        .then(res=>{
+            showToast(res.message);
+            updateCartBadge();
+        });
+    };
+});
+
+window.onload = updateCartBadge;
+</script>
+</body>
+</html>

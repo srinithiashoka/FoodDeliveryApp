@@ -1,0 +1,241 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.model.Cart;
+import com.foodapp.model.CartItem;
+import com.foodapp.util.DBConnection;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CartDAOImpl implements CartDAO {
+
+    // ==============================================================
+    // ADD NEW ITEM TO CART
+    // ==============================================================
+    @Override
+    public boolean addToCart(Cart c) {
+        String sql = "INSERT INTO cart (userId, menuId, quantity) VALUES (?, ?, ?)";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, c.getUserId());
+            ps.setInt(2, c.getMenuId());
+            ps.setInt(3, c.getQuantity());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ==============================================================
+    // FETCH CART ITEMS WITH MENU DETAILS
+    // ==============================================================
+    @Override
+    public List<CartItem> getCartByUser(int userId) {
+
+        List<CartItem> list = new ArrayList<>();
+
+        String sql = """
+            SELECT c.cartId, c.menuId, c.quantity,
+                   m.foodName, m.image, m.price
+            FROM cart c
+            JOIN menu m ON c.menuId = m.menuId
+            WHERE c.userId = ?
+        """;
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                CartItem item = new CartItem();
+                item.setCartId(rs.getInt("cartId"));
+                item.setMenuId(rs.getInt("menuId"));
+                item.setQuantity(rs.getInt("quantity"));
+                item.setFoodName(rs.getString("foodName"));
+                item.setFoodImage(rs.getString("image"));
+                item.setPrice(rs.getDouble("price"));
+                list.add(item);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    // ==============================================================
+    // UPDATE CART (QUANTITY)
+    // ==============================================================
+    @Override
+    public boolean updateCart(Cart c) {
+        String sql = "UPDATE cart SET quantity=? WHERE cartId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, c.getQuantity());
+            ps.setInt(2, c.getCartId());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ==============================================================
+    // DELETE SINGLE ITEM
+    // ==============================================================
+    @Override
+    public boolean deleteCartItem(int cartId) {
+        String sql = "DELETE FROM cart WHERE cartId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cartId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ==============================================================
+    // CLEAR FULL CART
+    // ==============================================================
+    @Override
+    public boolean clearCart(int userId) {
+        String sql = "DELETE FROM cart WHERE userId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ==============================================================
+    // GET CART COUNT FOR NAVBAR ICON
+    // ==============================================================
+    @Override
+    public int getCartCount(int userId) {
+        String sql = "SELECT SUM(quantity) FROM cart WHERE userId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // ==============================================================
+    // CHECK IF ITEM ALREADY EXISTS
+    // ==============================================================
+    @Override
+    public boolean itemExists(int userId, int menuId) {
+        String sql = "SELECT cartId FROM cart WHERE userId=? AND menuId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, menuId);
+
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ==============================================================
+    // ADD / UPDATE CART (used by AJAX in CartServlet)
+    // ==============================================================
+    @Override
+    public boolean addOrUpdateCart(int userId, int menuId, int quantity) {
+
+        if (itemExists(userId, menuId)) {
+
+            // UPDATE
+            String updateSql = "UPDATE cart SET quantity=? WHERE userId=? AND menuId=?";
+            try (Connection conn = DBConnection.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(updateSql)) {
+
+                ps.setInt(1, quantity);
+                ps.setInt(2, userId);
+                ps.setInt(3, menuId);
+
+                return ps.executeUpdate() > 0;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        // INSERT NEW
+        String insertSql = "INSERT INTO cart (userId, menuId, quantity) VALUES (?, ?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, menuId);
+            ps.setInt(3, quantity);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // ==============================================================
+    // REMOVE FROM CART USING userId & menuId
+    // ==============================================================
+    @Override
+    public boolean removeFromCart(int userId, int menuId) {
+        String sql = "DELETE FROM cart WHERE userId=? AND menuId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, menuId);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+}

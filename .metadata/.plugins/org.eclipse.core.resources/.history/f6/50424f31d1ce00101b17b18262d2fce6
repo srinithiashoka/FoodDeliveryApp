@@ -1,0 +1,97 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodExpress - Home</title>
+    <link rel="stylesheet" href="css/home.css">
+</head>
+
+<body>
+
+<!-- Fetch restaurants from DB -->
+<%
+    RestaurantDAO restaurantDAO = new RestaurantDAOImpl();
+    List<Restaurant> restaurantList = restaurantDAO.getActiveRestaurants();  // Only active restaurants
+%>
+
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <img src="https://via.placeholder.com/150x50?text=FoodExpress" alt="FoodExpress Logo">
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#restaurants">Restaurants</a></li>
+                <li><a href="#offers">Offers</a></li>
+                <li><a href="#help">Help</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn btn-login">Login</button>
+                <button class="btn btn-signup">Sign Up</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <h1>Order food from your favourite restaurants near you</h1>
+        <p>Get your food delivered fast</p>
+        <div class="search-box">
+            <input type="text" placeholder="Enter your location">
+            <input type="text" placeholder="Search restaurants or cuisines">
+            <button>Find Food</button>
+        </div>
+    </div>
+</section>
+
+<section class="restaurants" id="restaurants">
+    <div class="container">
+        <h2>Top Restaurants</h2>
+
+        <div class="restaurant-grid">
+
+            <% if (restaurantList != null && !restaurantList.isEmpty()) { 
+                   for (Restaurant r : restaurantList) { %>
+
+                <div class="restaurant-card">
+                    <img src="<%= (r.getImagePath() != null && !r.getImagePath().isEmpty()) ? r.getImagePath() : "https://via.placeholder.com/250x150" %>" 
+                         alt="<%= r.getName() %>">
+
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+
+                        <div class="restaurant-meta">
+                            <span><%= r.getCuisineType() %></span>
+                            <span><%= r.getDeliveryTime() %> mins</span>
+                        </div>
+
+                        <p><%= r.getAddress() %></p>
+                    </div>
+                </div>
+
+            <% } 
+               } else { %>
+
+               <p>No restaurants available.</p>
+
+            <% } %>
+
+        </div>
+    </div>
+</section>
+
+<footer>
+    &copy; 2025 FoodExpress. All rights reserved.
+</footer>
+
+</body>
+</html>

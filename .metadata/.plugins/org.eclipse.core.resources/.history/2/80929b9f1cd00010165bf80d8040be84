@@ -1,0 +1,204 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+    double subtotal = 0;
+    for(CartItem item : cartItems){
+        subtotal += item.getPrice() * item.getQuantity();
+    }
+    double tax = subtotal * 0.05; // 5% tax
+    double discount = subtotal * 0.1; // 10% discount
+    double grandTotal = subtotal + tax - discount;
+
+    Integer cartCount = cartItems.size();
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart - FoodHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+    <style>
+        /* ================= CART STYLES ================= */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; }
+        th { background: #ff6b81; color: #fff; }
+        td img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        .qty-btn, .btn-clear, .btn-add { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; }
+        .qty-btn { background: #ddd; margin: 0 3px; font-weight: bold; }
+        .qty-btn:hover { background: #bbb; }
+        .btn-clear { background: #ff4757; color: #fff; }
+        .btn-add { background: #2ed573; color: #fff; }
+        #totals { text-align: right; margin-top: 20px; max-width: 400px; margin-left: auto; }
+        #totals p { font-size: 1rem; margin: 4px 0; }
+        #totals p span { float: right; font-weight: bold; }
+        .payment-method { margin-top: 30px; max-width: 500px; }
+        .payment-method label { display: block; margin-bottom: 10px; font-weight: 600; }
+        .payment-method input { margin-right: 8px; }
+
+        /* Responsive adjustments */
+        @media(max-width: 767px){
+            table, th, td { font-size: 0.9rem; }
+            td img { width: 50px; height: 50px; }
+            .payment-method { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span class="welcome-text">Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart (<%= cartCount %> items)">
+                        <i class="fas fa-shopping-cart cart-icon"></i>
+                    </a>
+                    <% if (cartCount > 0) { %>
+                        <span class="cart-badge"><%= cartCount %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ================= CART CONTENT ================= -->
+<div class="container">
+    <h2 style="color:#ff4757; text-align:center; margin-top:20px;">Your Cart</h2>
+
+    <% if(cartItems.isEmpty()) { %>
+        <p style="text-align:center; color:red;">No items in your cart.</p>
+    <% } else { %>
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Item</th>
+                    <th>Price (₹)</th>
+                    <th>Quantity</th>
+                    <th>Total (₹)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cart-body">
+                <% for(CartItem item : cartItems) { %>
+                    <tr data-menuid="<%= item.getMenuId() %>">
+                        <td>
+                            <img src="<%= item.getFoodImage()!=null && !item.getFoodImage().isEmpty() ? item.getFoodImage() : "images/restaurants/default.jpg" %>" alt="<%= item.getFoodName() %>">
+                        </td>
+                        <td><%= item.getFoodName() %></td>
+                        <td><span class="price"><%= item.getPrice() %></span></td>
+                        <td class="qty"><%= item.getQuantity() %></td>
+                        <td>₹<span class="total"><%= item.getPrice()*item.getQuantity() %></span></td>
+                        <td>
+                            <button class="qty-btn increase">+</button>
+                            <button class="qty-btn decrease">-</button>
+                            <button class="qty-btn remove-btn" style="background:#ff6b81; color:#fff;">Remove</button>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div id="totals">
+            <p>Subtotal: <span>₹<%= String.format("%.2f", subtotal) %></span></p>
+            <p>Tax (5%): <span>₹<%= String.format("%.2f", tax) %></span></p>
+            <p>Discount (10%): <span>-₹<%= String.format("%.2f", discount) %></span></p>
+            <p style="font-size:1.2rem; color:#ff4757;">Grand Total: <span>₹<%= String.format("%.2f", grandTotal) %></span></p>
+            <button class="btn-clear" id="clear-cart">Clear Cart</button>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="payment-method">
+            <h3>Choose Payment Method</h3>
+            <label><input type="radio" name="payment" value="cod" checked> Cash on Delivery</label>
+            <label><input type="radio" name="payment" value="card"> Credit/Debit Card</label>
+            <label><input type="radio" name="payment" value="upi"> UPI</label>
+            <button class="btn btn-add" style="margin-top:10px;">Proceed to Payment</button>
+        </div>
+    <% } %>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+function updateGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('#cart-body tr').forEach(row => {
+        const price = parseFloat(row.querySelector('.price').textContent);
+        const qty = parseInt(row.querySelector('.qty').textContent);
+        row.querySelector('.total').textContent = (price * qty).toFixed(2);
+        total += price * qty;
+    });
+    const tax = total*0.05;
+    const discount = total*0.1;
+    const grandTotal = total + tax - discount;
+    document.querySelector('#totals').innerHTML = `
+        <p>Subtotal: <span>₹${total.toFixed(2)}</span></p>
+        <p>Tax (5%): <span>₹${tax.toFixed(2)}</span></p>
+        <p>Discount (10%): <span>-₹${discount.toFixed(2)}</span></p>
+        <p style="font-size:1.2rem; color:#ff4757;">Grand Total: <span>₹${grandTotal.toFixed(2)}</span></p>
+        <button class="btn-clear" id="clear-cart">Clear Cart</button>
+    `;
+}
+
+document.getElementById('cart-body').addEventListener('click', e => {
+    const row = e.target.closest('tr');
+    if(!row) return;
+    const qtyElem = row.querySelector('.qty');
+    let qty = parseInt(qtyElem.textContent);
+
+    if(e.target.classList.contains('increase')) { qtyElem.textContent = qty + 1; }
+    if(e.target.classList.contains('decrease')) { if(qty>1) qtyElem.textContent = qty-1; else row.remove(); }
+    if(e.target.classList.contains('remove-btn')) row.remove();
+
+    updateGrandTotal();
+});
+
+document.addEventListener('click', e => {
+    if(e.target && e.target.id === 'clear-cart'){
+        document.querySelector('#cart-body').innerHTML='';
+        updateGrandTotal();
+    }
+});
+
+updateGrandTotal();
+</script>
+</body>
+</html>

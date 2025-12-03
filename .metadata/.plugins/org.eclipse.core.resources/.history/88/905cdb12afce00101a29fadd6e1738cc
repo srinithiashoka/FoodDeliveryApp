@@ -1,0 +1,12 @@
+package com.foodapp.dao;
+
+import java.util.List;
+import com.foodapp.model.User;
+
+public interface UserDAO {
+    List<User> getAllUsers();
+    User getUser(int id);
+    void insertUser(User u);
+    void updateUser(User u);
+    void deleteUser(int id);
+}

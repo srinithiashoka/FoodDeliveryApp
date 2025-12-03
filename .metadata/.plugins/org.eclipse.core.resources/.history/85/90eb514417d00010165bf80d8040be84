@@ -1,0 +1,331 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants;
+
+    if ((location != null && !location.isEmpty()) || (restaurantName != null && !restaurantName.isEmpty())) {
+        restaurants = dao.searchRestaurants(location, restaurantName);
+    } else {
+        restaurants = dao.getActiveRestaurants();
+    }
+
+    User user = (User) session.getAttribute("user");
+    Integer cartCount = (Integer) session.getAttribute("cartCount");
+    if (cartCount == null) cartCount = 0;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodHub - Food Delivery App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+    
+    <style>
+        /* Fix cart badge positioning and visibility */
+        .cart-icon-wrapper { 
+            position: relative; display: inline-flex; align-items: center;
+        }
+        .cart-badge { 
+            position: absolute; top: -8px; right: -12px; 
+            background: #ff4444 !important; color: #fff !important; 
+            border-radius: 50%; padding: 2px 6px; font-size: 11px; 
+            font-weight: 700; min-width: 18px; height: 18px; 
+            display: flex !important; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(255,68,68,0.4);
+            z-index: 10;
+        }
+        .restaurant-card-link { 
+            text-decoration: none !important; color: inherit; 
+            display: block; position: relative;
+        }
+        .restaurant-card-link:hover .restaurant-card {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+        }
+        .search-results-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 15px 25px; border-radius: 12px; 
+            margin-bottom: 30px; display: flex; justify-content: space-between; 
+            align-items: center; flex-wrap: wrap; box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .no-results {
+            text-align: center; padding: 80px 20px; color: #666;
+            background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .no-results i { font-size: 5rem; color: #ddd; margin-bottom: 20px; display: block; }
+        .no-results a { 
+            display: inline-block; background: #ff4757; color: white; 
+            padding: 10px 20px; margin: 5px; border-radius: 25px; 
+            transition: all 0.3s; font-weight: 500;
+        }
+        .no-results a:hover { background: #ff3742; transform: translateY(-2px); }
+        
+        /* Mobile fixes */
+        @media (max-width: 768px) {
+            .search-results-info { flex-direction: column; text-align: center; gap: 12px; }
+            .cart-badge { top: -6px; right: -10px; font-size: 10px; }
+            .navbar { flex-direction: column; gap: 10px; padding: 10px 0; }
+            .nav-menu { order: 3; width: 100%; justify-content: center; flex-wrap: wrap; }
+        }
+        
+        /* Loading animation */
+        .restaurant-card img { transition: all 0.3s ease; }
+        .restaurant-card { transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="home.jsp#restaurants" class="smooth-scroll">Restaurants</a></li>
+                <li><a href="#" onclick="showOffers()">Offers</a></li>
+                <li><a href="#" onclick="showContact()">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span class="user-welcome">👋 Welcome, <strong><%= user.getUsername() %></strong></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="🛒 View Cart (<%= cartCount %> item<%= cartCount != 1 ? "s" : "" %>)" 
+                       id="cart-link">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png"
+                             alt="Shopping Cart" style="width: 28px; height: 28px; transition: transform 0.2s;">
+                    </a>
+                    <% if (cartCount > 0) { %>
+                        <span class="cart-badge" id="cart-badge"><%= cartCount %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-text-box">
+            <h1>Order food from your favourite restaurants near you</h1>
+            <p>Get your food delivered fast • Fresh • Delicious</p>
+        </div>
+
+        <div class="search-box">
+            <form action="home.jsp" method="get" class="search-form" id="search-form">
+                <div class="input-wrapper">
+                    <i class="fa fa-map-marker-alt"></i>
+                    <input type="text" name="location" placeholder="📍 Enter your location (Coimbatore)"
+                           value="<%= location != null ? location : "" %>">
+                </div>
+
+                <div class="input-wrapper">
+                    <i class="fa fa-search"></i>
+                    <input type="text" name="restaurant" placeholder="🍕 Search restaurants (Domino's)"
+                           value="<%= restaurantName != null ? restaurantName : "" %>">
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="fa fa-search"></i> Find Food
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIES SECTION -->
+<section class="categories">
+    <div class="container">
+        <h2>🍽️ Popular Categories</h2>
+        <div class="category-grid">
+            <a href="home.jsp?restaurant=pizza" class="category-card" title="Pizza">
+                <img src="images/pizzas.jpg" alt="Pizza" onerror="this.src='https://via.placeholder.com/150x110/ff4757/ffffff?text=Pizza'">
+                <p>Pizza</p>
+            </a>
+            <a href="home.jsp?restaurant=biryani" class="category-card" title="Biryani">
+                <img src="images/briyani.jpeg" alt="Biryani" onerror="this.src='https://via.placeholder.com/150x110/e74c3c/ffffff?text=Biryani'">
+                <p>Biryani</p>
+            </a>
+            <a href="home.jsp?restaurant=burger" class="category-card" title="Burgers">
+                <img src="images/burgers.jpg" alt="Burgers" onerror="this.src='https://via.placeholder.com/150x110/f39c12/ffffff?text=Burgers'">
+                <p>Burgers</p>
+            </a>
+            <a href="home.jsp?restaurant=cake" class="category-card" title="Cakes">
+                <img src="images/cake.jpg" alt="Cakes" onerror="this.src='https://via.placeholder.com/150x110/9c88ff/ffffff?text=Cakes'">
+                <p>Cakes</p>
+            </a>
+            <a href="home.jsp?location=coimbatore" class="category-card" title="Meals">
+                <img src="images/meals.jpeg" alt="Meals" onerror="this.src='https://via.placeholder.com/150x110/00d2d3/ffffff?text=Meals'">
+                <p>Meals</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- RESTAURANTS SECTION -->
+<section class="restaurants" id="restaurants">
+    <div class="container">
+        <h2 id="restaurant-title">
+            <% if (location != null && !location.isEmpty()) { %>
+                🍴 Restaurants in <%= location %>
+            <% } else if (restaurantName != null && !restaurantName.isEmpty()) { %>
+                🔍 Search Results for "<%= restaurantName %>"
+            <% } else { %>
+                🔥 Top Restaurants Near You
+            <% } %>
+        </h2>
+        
+        <% if (restaurants != null && !restaurants.isEmpty()) { %>
+            <div class="search-results-info">
+                <span>✅ Found <strong><%= restaurants.size() %></strong> restaurant<%= restaurants.size() != 1 ? "s" : "" %></span>
+                <span>🛒 Cart: <strong><%= cartCount %></strong> item<%= cartCount != 1 ? "s" : "" %></span>
+            </div>
+        <% } %>
+
+        <div class="restaurant-grid">
+            <% if (restaurants != null && !restaurants.isEmpty()) {
+                for (Restaurant r : restaurants) { %>
+            <a href="menu?action=byRestaurant&restaurantId=<%= r.getRestaurantId() %>" class="restaurant-card-link">
+                <div class="restaurant-card">
+                    <% String imgPath = (r.getImagePath() != null && !r.getImagePath().isEmpty()) ? r.getImagePath() : "images/restaurants/default.jpg"; %>
+                    <img src="<%= imgPath %>" alt="<%= r.getName() %> Restaurant"
+                         onerror="this.src='https://via.placeholder.com/260x160/667eea/ffffff?text=🍽️+<%= r.getName() %>'"
+                         loading="lazy">
+                    
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+                        <div class="restaurant-meta">
+                            <span class="cuisine">🍛 <%= r.getCuisineType() %></span>
+                            <span class="delivery-time">⚡ <%= r.getDeliveryTime() %></span>
+                        </div>
+                        <p class="address"><%= r.getAddress().length() > 45 ? r.getAddress().substring(0, 45) + "..." : r.getAddress() %></p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <span style="color:#f39c12; font-size:1.1em;">⭐ 4.5</span>
+                            <span style="font-size:0.85em; color:#888;">200+ orders</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <%  }
+            } else { %>
+                <div class="no-results">
+                    <i class="fa fa-search fa-4x"></i>
+                    <h3>No restaurants found 😔</h3>
+                    <p>Try adjusting your search or explore popular options:</p>
+                    <div style="margin-top:25px;">
+                        <a href="home.jsp?location=coimbatore">📍 Coimbatore</a>
+                        <a href="home.jsp?restaurant=pizza">🍕 Pizza</a>
+                        <a href="home.jsp?restaurant=biryani">🍛 Biryani</a>
+                        <a href="home.jsp">All Restaurants</a>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | Made with ❤️ in Coimbatore | All Rights Reserved</p>
+    </div>
+</footer>
+
+<script>
+const isLoggedIn = <%= (user != null) ? "true" : "false" %>;
+const contextPath = "<%=request.getContextPath()%>";
+const initialCartCount = <%= cartCount %>;
+
+// 🛒 Enhanced Cart Badge Management
+function updateCartBadge(count) {
+    const wrapper = document.querySelector(".cart-icon-wrapper");
+    const existingBadge = document.getElementById("cart-badge");
+    const cartLink = document.getElementById("cart-link");
+    
+    if (count > 0) {
+        if (!existingBadge) {
+            const badge = document.createElement('span');
+            badge.id = 'cart-badge';
+            badge.className = 'cart-badge';
+            badge.textContent = count;
+            wrapper.appendChild(badge);
+        } else {
+            existingBadge.textContent = count;
+        }
+        cartLink.title = `🛒 View Cart (${count} item${count !== 1 ? 's' : ''})`;
+    } else {
+        if (existingBadge) existingBadge.remove();
+        cartLink.title = '🛒 Your Cart is empty';
+    }
+}
+
+// Real-time cart sync
+function syncCart() {
+    fetch(contextPath + "/cart?action=viewcount", { 
+        method: 'GET', credentials: 'same-origin', cache: 'no-store'
+    })
+    .then(res => res.json())
+    .then(data => {
+        updateCartBadge(data.count || 0);
+        document.querySelector('.search-results-info span:last-child')?.textContent 
+            .replace(/Cart: \d+/, `Cart: ${data.count || 0}`);
+    })
+    .catch(err => console.log('Cart sync:', err));
+}
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartBadge(initialCartCount);
+    
+    // Search form validation
+    document.getElementById('search-form')?.addEventListener('submit', function(e) {
+        const loc = this.querySelector('input[name="location"]').value.trim();
+        const rest = this.querySelector('input[name="restaurant"]').value.trim();
+        if (!loc && !rest) {
+            e.preventDefault();
+            alert('Please enter location OR restaurant name! 🍕📍');
+        }
+    });
+    
+    // Smooth scrolling
+    document.querySelectorAll('.smooth-scroll').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelector(link.getAttribute('href')).scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        });
+    });
+    
+    // Auto-sync cart every 20s
+    setInterval(syncCart, 20000);
+    syncCart(); // Initial sync
+});
+</script>
+
+</body>
+</html>

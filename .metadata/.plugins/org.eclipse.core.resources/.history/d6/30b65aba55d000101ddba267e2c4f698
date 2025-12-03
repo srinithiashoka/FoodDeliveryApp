@@ -1,0 +1,122 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.User" %>
+<%@ page import="com.foodapp.model.OrderItem" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    String orderIdStr = request.getParameter("orderId");
+    if (orderIdStr == null || orderIdStr.trim().isEmpty()) {
+        response.sendRedirect("home.jsp");
+        return;
+    }
+
+    int orderId = Integer.parseInt(orderIdStr);
+
+    OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    List<OrderItem> orderItems = orderItemDAO.getItemsByOrder(orderId);
+    double totalAmount = 0;
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<style>
+/* GENERAL PAGE */
+body {display:flex; flex-direction:column; min-height:100vh; background:#f9f9f9; color:#333;}
+
+/* HEADER already in home.css */
+
+/* TRACK ORDER CONTENT */
+.track-section {flex:1; padding:40px 20px;}
+.track-section h1 {text-align:center; color:#ff4757; margin-bottom:30px;}
+.order-table {width:100%; max-width:800px; margin:0 auto; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+.order-table th, .order-table td {padding:12px 15px; text-align:left;}
+.order-table th {background:#ff4757; color:white; font-weight:600;}
+.order-table tr:nth-child(even){background:#f8f8f8;}
+.total-row td {font-weight:bold; font-size:1.1rem;}
+.back-btn {display:inline-block; margin:20px auto 0; padding:10px 20px; background:#ff4757; color:white; text-decoration:none; border-radius:6px; font-weight:bold; transition:0.3s;}
+.back-btn:hover {background:#e03c4c; transform:scale(1.05);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <span>Welcome, <%= user.getUsername() %></span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- TRACK ORDER SECTION -->
+<section class="track-section">
+    <h1>Track Your Order</h1>
+
+    <table class="order-table">
+        <tr>
+            <th>#</th>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+        <%
+            int count = 1;
+            for(OrderItem item : orderItems){
+                Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+                double itemTotal = item.getQuantity() * menu.getPrice();
+                totalAmount += itemTotal;
+        %>
+        <tr>
+            <td><%= count++ %></td>
+            <td><%= menu.getItemName() %></td>
+            <td><%= item.getQuantity() %></td>
+            <td>₹<%= String.format("%.2f", menu.getPrice()) %></td>
+            <td>₹<%= String.format("%.2f", itemTotal) %></td>
+        </tr>
+        <% } %>
+        <tr class="total-row">
+            <td colspan="4">Grand Total</td>
+            <td>₹<%= String.format("%.2f", totalAmount) %></td>
+        </tr>
+    </table>
+
+    <a href="home.jsp" class="back-btn">Back to Home</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved | Made with ❤️ in Coimbatore</p>
+    </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+```
+private CartDAO cartDAO = new CartDAOImpl();
+
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    response.setContentType("text/plain");
+    HttpSession session = request.getSession();
+    User user = (User) session.getAttribute("user");
+
+    if (user == null) {
+        response.getWriter().write("fail");
+        return;
+    }
+
+    String action = request.getParameter("action");
+    String menuIdStr = request.getParameter("menuId");
+    String quantityStr = request.getParameter("quantity");
+
+    int userId = user.getUserId();
+    boolean success = false;
+
+    try {
+        int menuId = (menuIdStr != null && !menuIdStr.isEmpty()) ? Integer.parseInt(menuIdStr) : 0;
+        int quantity = (quantityStr != null && !quantityStr.isEmpty()) ? Integer.parseInt(quantityStr) : 0;
+
+        switch (action) {
+            case "add":
+                success = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+                break;
+
+            case "delete":
+                success = cartDAO.removeFromCart(userId, menuId);
+                break;
+
+            case "clear":
+                success = cartDAO.clearCartByUserId(userId);
+                break;
+
+            case "viewCount":
+                int count = cartDAO.getCartItemCount(userId);
+                response.getWriter().write(String.valueOf(count));
+                return;
+
+            default:
+                success = false;
+        }
+
+        if (success) {
+            // update session cart count
+            int cartCount = cartDAO.getCartItemCount(userId);
+            session.setAttribute("cartCount", cartCount);
+            response.getWriter().write("success");
+        } else {
+            response.getWriter().write("fail");
+        }
+
+    } catch (NumberFormatException e) {
+        response.getWriter().write("fail");
+        e.printStackTrace();
+    }
+}
+
+
+
+}

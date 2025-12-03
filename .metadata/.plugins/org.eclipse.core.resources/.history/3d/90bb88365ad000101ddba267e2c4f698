@@ -1,0 +1,121 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.foodapp.dao.impl.OrderDAOImpl" %>
+<%@ page import="com.foodapp.model.Order" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+
+    int orderId = 0;
+    String orderParam = request.getParameter("orderId");
+    if(orderParam != null){
+        try { orderId = Integer.parseInt(orderParam); } 
+        catch(NumberFormatException e){ orderId = 0; }
+    }
+
+    Order order = null;
+    if(orderId > 0){
+        OrderDAOImpl orderDAO = new OrderDAOImpl();
+        order = orderDAO.getOrderById(orderId);
+    }
+%>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="home.jsp">Restaurants</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if(user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div class="container menu-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Home</a>
+    <h1 class="menu-title">Track Your Order</h1>
+
+    <div class="order-container" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <% if(order != null){ %>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Order ID:</span>
+            <span>#<%= order.getOrderId() %></span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Restaurant ID:</span>
+            <span>#<%= order.getRestaurantId() %></span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Order Date:</span>
+            <span><%= order.getOrderDate() %></span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Total Amount:</span>
+            <span>₹<%= String.format("%.2f", order.getTotalAmount()) %></span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Payment Mode:</span>
+            <span><%= order.getPaymentMode() %></span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; margin:10px 0;">
+            <span>Status:</span>
+            <span class="order-status" id="orderStatus" style="font-weight:bold; color:#2ed573;"><%= order.getStatus() %></span>
+        </div>
+        <button class="btn" onclick="window.location.href='home.jsp'" style="margin-top:20px;">Back to Home</button>
+    <% } else { %>
+        <p class="no-menu-items" style="text-align:center;">Order not found!</p>
+        <button class="btn" onclick="window.location.href='home.jsp'" style="margin-top:20px;">Go Home</button>
+    <% } %>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved</p>
+    </div>
+</footer>
+
+<script>
+// Show toast if order exists
+<% if(order != null){ %>
+    const toast = document.getElementById('toast');
+    toast.innerText = "Tracking Order #<%= order.getOrderId() %>";
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 3000);
+<% } %>
+</script>
+
+</body>
+</html>

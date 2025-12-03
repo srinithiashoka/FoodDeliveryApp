@@ -1,0 +1,162 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.model.User"%>
+
+<%
+    @SuppressWarnings("unchecked")
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - FoodHub</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+<!-- NAVBAR -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart (<%= cartCount %> items)">
+                        <i class="fas fa-shopping-cart cart-icon"></i>
+                    </a>
+                    <% if (cartCount > 0) { %>
+                        <span class="cart-badge"><%= cartCount %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="container menu-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+    <h1 class="menu-title">Menu</h1>
+
+    <% if (menuList != null && !menuList.isEmpty()) { %>
+        <% for (Menu m : menuList) { %>
+        <div class="menu-item menu-item-wrapper">
+            <div class="menu-image">
+                <img src="<%= (m.getImagePath() != null && !m.getImagePath().isEmpty()) 
+                            ? m.getImagePath() 
+                            : "images/restaurants/" + m.getRestaurantId() + "/" + m.getMenuId() + ".jpg" %>" 
+                     alt="<%= m.getItemName() %>">
+            </div>
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h3><%= m.getItemName() %></h3>
+                    <span class="menu-price">₹<%= m.getPrice() %></span>
+                </div>
+                <p class="menu-description"><%= m.getDescription() %></p>
+
+                <div class="quantity-controls">
+                    <button type="button" class="qty-btn decrease">-</button>
+                    <input type="text" value="0" class="quantity-input-display" readonly>
+                    <button type="button" class="qty-btn increase">+</button>
+                    <button type="button" class="btn-add" <%= !m.isAvailable() ? "disabled" : "" %>>Add to Cart</button>
+                    <button type="button" class="qty-btn clear">Clear</button>
+                </div>
+
+                <input type="hidden" class="menu-id" value="<%= m.getMenuId() %>">
+            </div>
+        </div>
+        <% } %>
+    <% } else { %>
+        <p class="no-menu-items">No menu items available.</p>
+    <% } %>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<!-- JS for Cart -->
+<script>
+const isLoggedIn = <%= (userId != null) ? "true" : "false" %>;
+const contextPath = "<%=request.getContextPath()%>";
+
+function showToast(message){
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'),2000);
+}
+
+function getMenuId(item){
+    const menuInput = item.querySelector(".menu-id");
+    return menuInput ? parseInt(menuInput.value || "0") : 0;
+}
+
+function addToCart(menuId, quantity, action){
+    if(!isLoggedIn){ window.location.href="login.jsp"; return; }
+    if(menuId<=0){ showToast("Invalid menu item"); return; }
+    const body="action="+encodeURIComponent(action)+"&menuId="+encodeURIComponent(menuId)+"&quantity="+encodeURIComponent(quantity);
+    fetch(contextPath+"/cart",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body
+    }).then(res=>res.json()).then(data=>{
+        if(data.status==="success"){ showToast("Cart updated"); updateCartBadge(data.count); }
+        else showToast(data.message || "Failed to update cart");
+    }).catch(err=>{ console.error(err); showToast("Network error"); });
+}
+
+function updateCartBadge(count){
+    const badge = document.querySelector(".cart-badge");
+    if(badge) badge.textContent = count!==undefined ? count : (parseInt(badge.textContent)||0);
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll(".menu-item-wrapper").forEach(item=>{
+        const decrease=item.querySelector(".decrease");
+        const increase=item.querySelector(".increase");
+        const clearBtn=item.querySelector(".clear");
+        const addBtn=item.querySelector(".btn-add");
+        const input=item.querySelector(".quantity-input-display");
+
+        decrease?.addEventListener('click',e=>{e.preventDefault();let val=parseInt(input.value||"0"); if(val>0) input.value=val-1;});
+        increase?.addEventListener('click',e=>{e.preventDefault(); let val=parseInt(input.value||"0"); input.value=val+1; });
+        clearBtn?.addEventListener('click',e=>{e.preventDefault(); input.value=0; const menuId=getMenuId(item); if(menuId>0) addToCart(menuId,0,"remove");});
+        addBtn?.addEventListener('click',e=>{e.preventDefault(); const menuId=getMenuId(item); const qty=parseInt(input.value||"0"); if(qty>0) addToCart(menuId,qty,"add"); else addToCart(menuId,0,"remove");});
+    });
+    updateCartBadge();
+});
+</script>
+
+</body>
+</html>

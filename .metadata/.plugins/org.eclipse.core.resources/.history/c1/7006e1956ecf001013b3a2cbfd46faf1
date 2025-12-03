@@ -1,0 +1,13 @@
+public interface CartDAO {
+    boolean addToCart(Cart cart);
+    boolean updateCart(Cart cart);
+    boolean deleteCartItem(int cartId);
+    List<CartItem> getCartByUser(int userId);
+    boolean clearCart(int userId);
+    int getCartCount(int userId);
+
+    // New methods
+    boolean removeFromCart(int userId, int menuId);
+    boolean addOrUpdateCart(int userId, int menuId, int quantity);
+    boolean itemExists(int userId, int menuId);
+}

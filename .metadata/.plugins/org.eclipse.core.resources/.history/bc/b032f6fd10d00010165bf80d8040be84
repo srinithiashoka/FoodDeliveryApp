@@ -1,0 +1,162 @@
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.CartDAO" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    CartDAO cartDAO = new CartDAOImpl();
+    List<CartItem> cartList = cartDAO.getCartByUser(user.getUserId());
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Cart</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin-top: 20px; }
+        th, td { padding: 10px; text-align: center; border: 1px solid #ccc; }
+        button { padding: 5px 10px; cursor: pointer; }
+        .quantity-btn { width: 25px; }
+
+        #toast {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            background: transparent; color: #333; font-size: 14px;
+            visibility: hidden; opacity: 0; transition: 0.2s;
+        }
+        #toast.show { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+
+<h2>Your Cart</h2>
+
+<% if (cartList.isEmpty()) { %>
+    <h3>No items in cart</h3>
+<% } else { %>
+
+<table>
+    <tr>
+        <th>Food</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        <th>Action</th>
+    </tr>
+
+<%
+    double grandTotal = 0;
+    for (CartItem c : cartList) {
+        double total = c.getPrice() * c.getQuantity();
+        grandTotal += total;
+%>
+    <tr data-menuid="<%= c.getMenuId() %>">
+        <td><%= c.getFoodName() %></td>
+        <td>
+            <button class="quantity-btn decrease">-</button>
+            <span class="qty"><%= c.getQuantity() %></span>
+            <button class="quantity-btn increase">+</button>
+        </td>
+        <td>₹ <%= c.getPrice() %></td>
+        <td class="total">₹ <%= total %></td>
+        <td><button class="remove-btn">Remove</button></td>
+    </tr>
+<% } %>
+</table>
+
+<h3 id="grand-total">Grand Total: ₹ <%= grandTotal %></h3>
+<button id="clear-cart" style="margin-top:20px; background:red; color:#fff;">Clear Cart</button>
+<% } %>
+
+<div id="toast"></div>
+
+<script>
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function updateCart(menuId, qtyChange, action) {
+    let body = `action=${action}&menuId=${menuId}`;
+    if (action === 'add') body += `&quantity=${qtyChange}`;
+
+    fetch('cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast(data.message || 'Updated');
+        // Update cart icon if exists
+        const cartIcon = document.getElementById('cart-count');
+        if (cartIcon) cartIcon.textContent = data.cartCount || 0;
+
+        // Update quantity display or reload table
+        location.reload();
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Network error');
+    });
+}
+
+// INCREASE
+document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        updateCart(menuId, 1, 'add');
+    });
+});
+
+// DECREASE
+document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        const qty = parseInt(tr.querySelector('.qty').textContent, 10);
+        if (qty <= 1) {
+            updateCart(menuId, 0, 'remove');
+        } else {
+            updateCart(menuId, -1, 'add');
+        }
+    });
+});
+
+// REMOVE
+document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        updateCart(menuId, 0, 'remove');
+    });
+});
+
+// CLEAR CART
+document.getElementById('clear-cart')?.addEventListener('click', () => {
+    fetch('cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=clear'
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast(data.message || 'Cart cleared');
+        const cartIcon = document.getElementById('cart-count');
+        if (cartIcon) cartIcon.textContent = 0;
+        location.reload();
+    });
+});
+</script>
+
+</body>
+</html>

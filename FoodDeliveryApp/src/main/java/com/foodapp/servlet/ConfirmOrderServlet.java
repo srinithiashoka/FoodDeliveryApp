@@ -1,0 +1,91 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.OrderDAOImpl;
+import com.foodapp.dao.impl.OrderItemDAOImpl;
+import com.foodapp.model.CartItem;
+import com.foodapp.model.Order;
+import com.foodapp.model.OrderItem;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.List;
+
+@WebServlet("/confirmOrder")
+public class ConfirmOrderServlet extends HttpServlet {
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        String payment = request.getParameter("payment");
+
+        CartDAOImpl cartDAO = new CartDAOImpl();
+        OrderDAOImpl orderDAO = new OrderDAOImpl();
+        OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+
+        List<CartItem> cartItems = cartDAO.getCartByUser(user.getUserId());
+        if (cartItems.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        double subtotal = 0;
+        for (CartItem item : cartItems) {
+            subtotal += item.getPrice() * item.getQuantity();
+        }
+
+        double tax = subtotal * 0.05;
+        double discount = subtotal * 0.1;
+        double grandTotal = subtotal + tax - discount;
+
+        // Create order object
+        Order order = new Order();
+        order.setUserId(user.getUserId());
+        order.setRestaurantId(cartItems.get(0).getRestaurantId());
+        order.setOrderDate(new Timestamp(System.currentTimeMillis()));
+        order.setTotalAmount(grandTotal);
+        order.setStatus("Pending");
+        order.setPaymentMode(payment);
+
+        // insert order and get ID
+        int orderId = orderDAO.addOrderReturnId(order);
+
+        if (orderId > 0) {
+
+            // SAVE IN SESSION (IMPORTANT!!!)
+            session.setAttribute("lastOrderId", orderId);
+
+            // Insert all order items
+            for (CartItem cartItem : cartItems) {
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(orderId);
+                orderItem.setMenuId(cartItem.getMenuId());
+                orderItem.setQuantity(cartItem.getQuantity());
+                orderItem.setTotalPrice(cartItem.getPrice() * cartItem.getQuantity());
+                orderItemDAO.addOrderItem(orderItem);
+            }
+
+            // Clear cart
+            cartDAO.clearCartByUserId(user.getUserId());
+
+            // Send success
+            response.setStatus(HttpServletResponse.SC_OK);
+
+        } else {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+}

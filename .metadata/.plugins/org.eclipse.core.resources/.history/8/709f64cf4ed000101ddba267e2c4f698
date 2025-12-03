@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FoodDelivery – Home</title>
+
+<style>
+/* ============================
+   RESET
+============================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+body {
+    background: #fff0f6; /* light pink */
+}
+
+/* ============================
+   HEADER
+============================ */
+header {
+    background: linear-gradient(135deg, #ff3366, #cc0044);
+    padding: 40px 0;
+    color: white;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: fadeDown 0.7s ease-in-out;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+header h1 {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 17px;
+    opacity: 0.9;
+}
+
+/* ============================
+   SEARCH BOXES SECTION
+============================ */
+.search-section {
+    width: 90%;
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+.search-box {
+    background: #fff;
+    padding: 18px;
+    margin: 12px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    font-size: 18px;
+    font-weight: bold;
+    color: #cc0044;
+    cursor: pointer;
+    text-align: center;
+}
+
+.search-box:hover {
+    background: #ffe6f1;
+}
+
+/* ============================
+   CATEGORIES TITLE
+============================ */
+.title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 50px;
+    color: #cc0044;
+}
+
+/* ============================
+   CATEGORIES GRID
+============================ */
+.categories {
+    width: 90%;
+    max-width: 1200px;
+    margin: 25px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 18px;
+}
+
+.category-card {
+    background: white;
+    padding: 28px 0;
+    text-align: center;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    background: #ffe0ef;
+}
+
+.category-card img {
+    width: 65px;
+    margin-bottom: 10px;
+}
+
+/* ============================
+   RESTAURANTS SECTION
+============================ */
+.rest-section {
+    width: 90%;
+    max-width: 1200px;
+    margin: 40px auto;
+}
+
+.rest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+}
+
+.rest-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.rest-card:hover {
+    transform: translateY(-6px);
+}
+
+.rest-card img {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+}
+
+.rest-details {
+    padding: 15px;
+}
+
+.rest-details h3 {
+    color: #cc0044;
+    margin-bottom: 5px;
+}
+
+.rest-details p {
+    color: #444;
+    font-size: 14px;
+}
+
+/* ============================
+   FOOTER
+============================ */
+footer {
+    background: #cc0044;
+    text-align: center;
+    color: #fff;
+    padding: 18px;
+    margin-top: 50px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================
+     HEADER
+============================ -->
+<header>
+    <h1>Welcome to FoodDelivery</h1>
+    <p>Order food from your favourite restaurants</p>
+</header>
+
+<!-- ============================
+     SEARCH SECTION
+============================ -->
+<div class="search-section">
+    <div class="search-box">📍 Choose Location</div>
+    <div class="search-box">🔍 Search Restaurants</div>
+    <div class="search-box">🍽️ Find Food</div>
+</div>
+
+<!-- ============================
+     CATEGORIES
+============================ -->
+<div class="title">Popular Categories</div>
+
+<div class="categories">
+
+    <div class="category-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/3075/3075977.png">
+        <p>Pizza</p>
+    </div>
+
+    <div class="category-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/2718/2718224.png">
+        <p>Burgers</p>
+    </div>
+
+    <div class="category-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046786.png">
+        <p>Biriyani</p>
+    </div>
+
+    <div class="category-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/2921/2921822.png">
+        <p>Juice</p>
+    </div>
+
+</div>
+
+<!-- ============================
+     RESTAURANT SUGGESTIONS
+============================ -->
+<div class="title">Top Restaurants Near You</div>
+
+<div class="rest-section">
+
+    <div class="rest-grid">
+
+        <div class="rest-card">
+            <img src="https://b.zmtcdn.com/data/pictures/4/19843564/da8e9d1b70229e292743ffb391d4b266_featured_v2.jpg">
+            <div class="rest-details">
+                <h3>Paradise Biryani</h3>
+                <p>Hyderabadi · ₹300 for two</p>
+            </div>
+        </div>
+
+        <div class="rest-card">
+            <img src="https://b.zmtcdn.com/data/pictures/chains/7/19548847/ebaec1ade39f4e76becd75d27be27fa6_featured_v2.jpg">
+            <div class="rest-details">
+                <h3>Burger King</h3>
+                <p>Burgers · ₹250 for two</p>
+            </div>
+        </div>
+
+        <div class="rest-card">
+            <img src="https://b.zmtcdn.com/data/pictures/2/19524662/64875a49ce29967502f31b8e4bc6d651_featured_v2.jpg">
+            <div class="rest-details">
+                <h3>Pizza Hut</h3>
+                <p>Pizzas · ₹350 for two</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================
+     FOOTER
+============================ -->
+<footer>
+    © 2025 FoodDelivery • Designed by You
+</footer>
+
+</body>
+</html>

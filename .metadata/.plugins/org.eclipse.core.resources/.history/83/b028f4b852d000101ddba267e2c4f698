@@ -1,0 +1,120 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.User" %>
+<%@ page import="com.foodapp.model.OrderItem" %>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%@ page import="com.foodapp.model.Menu" %>
+
+<%
+    // Check user session
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    // Get orderId safely
+    String oid = request.getParameter("orderId");
+    if (oid == null || oid.trim().equals("")) {
+        response.sendRedirect("home.jsp");
+        return;
+    }
+
+    int orderId = Integer.parseInt(oid);
+
+    // Initialize DAOs
+    OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    // Fetch order items
+    List<OrderItem> orderItems = orderItemDAO.getItemsByOrder(orderId);
+
+    // Calculate total
+    double totalAmount = 0;
+    for (OrderItem item : orderItems) {
+        totalAmount += item.getTotalPrice();
+    }
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Success - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body { margin:0; padding:0; font-family: "Segoe UI", Tahoma, sans-serif; background:#fff0f6; }
+
+.success-section { display:flex; justify-content:center; align-items:center; padding:35px 15px; }
+.success-box { text-align:center; background:#fff; padding:22px 20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); max-width:420px; width:95%; animation:fadeIn 0.6s ease-in-out; }
+
+@keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+
+.success-animation { width:80px; height:80px; margin:0 auto; position:relative; }
+.circle { width:80px; height:80px; background:#2ed573; border-radius:50%; animation:pop 0.45s ease-out; }
+.checkmark { position:absolute; font-size:45px; color:white; top:14px; left:21px; opacity:0; animation:check 0.6s ease-out 0.2s forwards; }
+@keyframes pop {0%{transform:scale(0.2);opacity:0;} 100%{transform:scale(1);opacity:1;}}
+@keyframes check {0%{transform:scale(0.2);opacity:0;} 100%{transform:scale(1);opacity:1;}}
+
+.success-box h1 { font-size:1.5rem; color:#2ecc71; margin-top:10px; }
+.success-text { margin:8px 0; color:#444; font-size:0.95rem; }
+
+.order-summary { text-align:left; margin-top:15px; }
+.order-summary h4 { color:#ff4757; margin-bottom:8px; }
+.order-item { display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem; }
+.order-total { margin-top:10px; border-top:1px solid #ddd; padding-top:6px; font-weight:bold; }
+
+.track-btn { display:inline-block; margin-top:18px; padding:10px 20px; background:#ff4757; color:white; border-radius:6px; font-size:0.9rem; text-decoration:none; font-weight:bold; transition:0.3s; }
+.track-btn:hover { background:#e03c4c; transform:scale(1.05); }
+
+footer { margin-top:30px; text-align:center; color:#888; font-size:0.85rem; }
+</style>
+</head>
+<body>
+
+<section class="success-section">
+    <div class="success-box">
+
+        <div class="success-animation">
+            <div class="circle"></div>
+            <div class="checkmark">&#10004;</div>
+        </div>
+
+        <h1>Order Placed Successfully!</h1>
+
+        <p class="success-text">
+            Thank you for ordering from FoodHub.<br>
+            Your delicious food is being prepared.
+        </p>
+
+        <div class="order-summary">
+            <h4>Order Summary</h4>
+
+            <% for (OrderItem item : orderItems) {
+                Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+                String itemName = (menu != null) ? menu.getItemName() : "Item";
+            %>
+            <div class="order-item">
+                <span><%= itemName %> × <%= item.getQuantity() %></span>
+                <span>₹<%= String.format("%.2f", item.getTotalPrice()) %></span>
+            </div>
+            <% } %>
+
+            <div class="order-item order-total">
+                <span>Total Amount</span>
+                <span>₹<%= String.format("%.2f", totalAmount) %></span>
+            </div>
+        </div>
+
+        <a href="home.jsp" class="track-btn">Go to Home</a>
+    </div>
+</section>
+
+<footer>
+    © 2025 FoodHub | All Rights Reserved
+</footer>
+
+</body>
+</html>

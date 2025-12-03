@@ -1,0 +1,141 @@
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.CartDAO" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    CartDAO cartDAO = new CartDAOImpl();
+    List<CartItem> cartList = cartDAO.getCartByUser(user.getUserId());
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Cart - FoodHub</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin-top: 20px; }
+        th, td { padding: 10px; text-align: center; border: 1px solid #ccc; }
+        button { padding: 5px 10px; cursor: pointer; }
+        .quantity-btn { width: 25px; }
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 10px; position: fixed; top: 20px; right: 20px; z-index: 1000; opacity: 0; transition: opacity 0.5s, visibility 0.5s; }
+        #toast.show { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+
+<h2>Your Cart</h2>
+
+<% if (cartList.isEmpty()) { %>
+    <h3>No items in cart</h3>
+<% } else { %>
+
+<table>
+    <tr>
+        <th>Food</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        <th>Action</th>
+    </tr>
+
+<%
+    double grandTotal = 0;
+    for (CartItem c : cartList) {
+        double total = c.getPrice() * c.getQuantity();
+        grandTotal += total;
+%>
+    <tr data-menuid="<%= c.getMenuId() %>">
+        <td><%= c.getFoodName() %></td>
+        <td>
+            <button class="qty-btn decrease">-</button>
+            <span class="qty"><%= c.getQuantity() %></span>
+            <button class="qty-btn increase">+</button>
+        </td>
+        <td>₹ <%= c.getPrice() %></td>
+        <td class="total">₹ <%= total %></td>
+        <td><button class="remove-btn">Remove</button></td>
+    </tr>
+<% } %>
+</table>
+
+<h3 id="grand-total">Grand Total: ₹ <%= grandTotal %></h3>
+<button id="clear-cart" style="margin-top:20px; background:red; color:#fff;">Clear Cart</button>
+<% } %>
+
+<div id="toast"></div>
+
+<script>
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function updateCart(menuId, quantity, action) {
+    fetch("cart", {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: `action=${action}&menuId=${menuId}&quantity=${quantity}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === "success") showToast(data.message);
+        else alert(data.message || "Cart update failed");
+        location.reload(); // reload to update quantities and total
+    })
+    .catch(err => console.error(err));
+}
+
+document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = tr.dataset.menuid;
+        let qtyElem = tr.querySelector('.qty');
+        let qty = parseInt(qtyElem.textContent) + 1;
+        updateCart(menuId, qty, "add");
+    });
+});
+
+document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = tr.dataset.menuid;
+        let qtyElem = tr.querySelector('.qty');
+        let qty = parseInt(qtyElem.textContent) - 1;
+        if(qty <= 0) updateCart(menuId, 0, "remove");
+        else updateCart(menuId, qty, "add");
+    });
+});
+
+document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = tr.dataset.menuid;
+        updateCart(menuId, 0, "remove");
+    });
+});
+
+document.getElementById('clear-cart')?.addEventListener('click', () => {
+    fetch("cart", {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: "action=clear"
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === "success") showToast(data.message);
+        location.reload();
+    });
+});
+</script>
+
+</body>
+</html>

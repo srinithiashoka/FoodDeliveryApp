@@ -1,0 +1,115 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+        int userId = user.getUserId();
+
+        // -----------------------------
+        // View cart count (for badge)
+        // -----------------------------
+        if ("viewcount".equalsIgnoreCase(action)) {
+            int cartCount = cartDAO.getCartItemCount(userId);
+            response.getWriter().write("{\"count\":" + cartCount + "}");
+            return;
+        }
+
+        // -----------------------------
+        // Clear cart action
+        // -----------------------------
+        if ("clear".equalsIgnoreCase(action)) {
+            boolean cleared = cartDAO.clearCartByUserId(userId);
+            int cartCount = cartDAO.getCartItemCount(userId);
+            response.getWriter().write(
+                    "{\"status\":\"success\",\"message\":\"Cart cleared\",\"cartCount\":" + cartCount + "}"
+            );
+            return;
+        }
+
+        // Check required parameters
+        if (action == null || menuIdStr == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+            return;
+        }
+
+        int menuId = Integer.parseInt(menuIdStr);
+        int quantity = (quantityStr != null) ? Integer.parseInt(quantityStr) : 1;
+
+        // Fetch menu item
+        Menu menu = menuDAO.getMenuItemById(menuId);
+        if (menu == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Menu item not found\"}");
+            return;
+        }
+
+        int restaurantId = menu.getRestaurantId();
+        Integer currentCartRestaurant = cartDAO.getRestaurantIdInCart(userId);
+
+        // Different restaurant → clear cart
+        if (currentCartRestaurant != null && currentCartRestaurant != restaurantId) {
+            cartDAO.clearCartByUserId(userId);
+        }
+
+        boolean success = false;
+        String message = "";
+
+        switch (action.toLowerCase()) {
+            case "add":
+                if (quantity <= 0) {
+                    success = cartDAO.removeFromCart(userId, menuId);
+                    message = success ? "Item removed" : "Item not found";
+                } else {
+                    success = cartDAO.addOrUpdateCart(userId, menuId, quantity, restaurantId);
+                    message = success ? "Item added/updated" : "Failed to update cart";
+                }
+                break;
+
+            case "remove":
+                success = cartDAO.removeFromCart(userId, menuId);
+                message = success ? "Item removed" : "Item not found";
+                break;
+
+            default:
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+                return;
+        }
+
+        int cartCount = cartDAO.getCartItemCount(userId);
+        response.getWriter().write(
+                "{\"status\":\"" + (success ? "success" : "error") + "\",\"message\":\"" + message + "\",\"cartCount\":" + cartCount + "}"
+        );
+    }
+}

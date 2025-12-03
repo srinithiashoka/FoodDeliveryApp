@@ -1,0 +1,156 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.model.Cart;
+import com.foodapp.model.CartItem;
+import com.foodapp.util.DBConnection;
+
+import java.sql.*;
+import java.util.*;
+
+public class CartDAOImpl implements CartDAO {
+
+    @Override
+    public boolean addToCart(Cart c) {
+        String sql = "INSERT INTO cart (userId, menuId, quantity) VALUES (?, ?, ?)";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, c.getUserId());
+            ps.setInt(2, c.getMenuId());
+            ps.setInt(3, c.getQuantity());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    @Override
+    public List<Cart> getCartByUser(int userId) {
+        List<Cart> list = new ArrayList<>();
+        String sql = "SELECT * FROM cart WHERE userId=?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Cart c = new Cart();
+                c.setCartId(rs.getInt("cartId"));
+                c.setUserId(rs.getInt("userId"));
+                c.setMenuId(rs.getInt("menuId"));
+                c.setQuantity(rs.getInt("quantity"));
+                list.add(c);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+
+
+    @Override
+    public boolean updateCart(Cart c) {
+        String sql = "UPDATE cart SET quantity=? WHERE cartId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, c.getQuantity());
+            ps.setInt(2, c.getCartId());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    @Override
+    public boolean deleteCartItem(int cartId) {
+        String sql = "DELETE FROM cart WHERE cartId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cartId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    @Override
+    public boolean clearCart(int userId) {
+        String sql = "DELETE FROM cart WHERE userId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    @Override
+    public int getCartCount(int userId) {
+        String sql = "SELECT COUNT(*) FROM cart WHERE userId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+
+    @Override
+    public boolean removeFromCart(Integer userId, int menuId) {
+        boolean success = false;
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DBConnection.getConnection(); // your DB connection utility
+            String sql = "DELETE FROM cart WHERE userId = ? AND menuId = ?";
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, userId);
+            ps.setInt(2, menuId);
+
+            int rowsAffected = ps.executeUpdate();
+            success = rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(ps != null) ps.close();
+                if(conn != null) conn.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return success;
+    }
+
+}

@@ -1,0 +1,140 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.model.Cart;
+import com.foodapp.db.DBConnection;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CartDAOImpl implements CartDAO {
+
+    @Override
+    public boolean addOrUpdateCart(int userId, int menuId, int quantity) {
+        String checkSql = "SELECT quantity FROM cart WHERE userId = ? AND menuId = ?";
+        String insertSql = "INSERT INTO cart (userId, menuId, quantity) VALUES (?, ?, ?)";
+        String updateSql = "UPDATE cart SET quantity = ? WHERE userId = ? AND menuId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+            checkStmt.setInt(1, userId);
+            checkStmt.setInt(2, menuId);
+
+            ResultSet rs = checkStmt.executeQuery();
+
+            if (rs.next()) {
+                // Already exists → update
+                try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                    updateStmt.setInt(1, quantity);
+                    updateStmt.setInt(2, userId);
+                    updateStmt.setInt(3, menuId);
+                    return updateStmt.executeUpdate() > 0;
+                }
+
+            } else {
+                // Not exists → insert
+                try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                    insertStmt.setInt(1, userId);
+                    insertStmt.setInt(2, menuId);
+                    insertStmt.setInt(3, quantity);
+                    return insertStmt.executeUpdate() > 0;
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in addOrUpdateCart(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean removeFromCart(int userId, int menuId) {
+        String sql = "DELETE FROM cart WHERE userId = ? AND menuId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            stmt.setInt(2, menuId);
+            return stmt.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error in removeFromCart(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    @Override
+    public int getCartCount(int userId) {
+        String sql = "SELECT SUM(quantity) FROM cart WHERE userId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in getCartCount(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    @Override
+    public List<Cart> getCartItems(int userId) {
+        List<Cart> list = new ArrayList<>();
+        String sql = "SELECT * FROM cart WHERE userId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Cart cart = new Cart();
+                cart.setCartId(rs.getInt("cartId"));
+                cart.setUserId(rs.getInt("userId"));
+                cart.setMenuId(rs.getInt("menuId"));
+                cart.setQuantity(rs.getInt("quantity"));
+                list.add(cart);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in getCartItems(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    @Override
+    public boolean clearCart(int userId) {
+        String sql = "DELETE FROM cart WHERE userId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            return stmt.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error in clearCart(): " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+}

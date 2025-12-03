@@ -1,0 +1,118 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        // LOG EVERYTHING FIRST
+        System.out.println("=== CARTSERVLET POST START ===");
+        System.out.println("Content-Type: " + response.getContentType());
+        System.out.println("Request URI: " + request.getRequestURI());
+        System.out.println("Query String: " + request.getQueryString());
+        System.out.println("Parameters: " + java.util.Arrays.toString(request.getParameterMap.entrySet().toArray()));
+        
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+        System.out.println("User: " + (user != null ? user.getUserId() : "NULL"));
+
+        if (user == null) {
+            String json = "{\"status\":\"error\",\"message\":\"User not logged in\"}";
+            System.out.println("RESPONSE: " + json);
+            response.getWriter().write(json);
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        System.out.println("RAW PARAMS -> action='" + action + "' | menuId='" + menuIdStr + "' | quantity='" + quantityStr + "'");
+
+        // Early validation
+        if (action == null || action.trim().isEmpty() || 
+            menuIdStr == null || menuIdStr.trim().isEmpty() ||
+            quantityStr == null || quantityStr.trim().isEmpty()) {
+            String json = "{\"status\":\"error\",\"message\":\"Missing parameters\"}";
+            System.out.println("RESPONSE: " + json);
+            response.getWriter().write(json);
+            return;
+        }
+
+        int userId = user.getUserId();
+        int menuId = 0;
+        int quantity = 0;
+
+        try {
+            menuId = Integer.parseInt(menuIdStr.trim());
+            quantity = Integer.parseInt(quantityStr.trim());
+            System.out.println("PARSED -> menuId=" + menuId + " | quantity=" + quantity);
+
+            if (menuId <= 0 || quantity < 0) {
+                String json = "{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}";
+                System.out.println("RESPONSE: " + json);
+                response.getWriter().write(json);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("PARSE ERROR: " + e.getMessage());
+            String json = "{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}";
+            response.getWriter().write(json);
+            return;
+        }
+
+        // Your existing switch logic here...
+        switch (action.toLowerCase()) {
+            case "add":
+                // ... rest unchanged
+                break;
+            // ... other cases
+            default:
+                String json = "{\"status\":\"error\",\"message\":\"Unknown action: " + action + "\"}";
+                System.out.println("RESPONSE: " + json);
+                response.getWriter().write(json);
+        }
+        System.out.println("=== CARTSERVLET POST END ===");
+    }
+
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+
+        if ("viewcount".equalsIgnoreCase(action)) {
+            int count = cartDAO.getCartItemCount(userId);
+            response.getWriter().write("{\"count\":" + count + "}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+}

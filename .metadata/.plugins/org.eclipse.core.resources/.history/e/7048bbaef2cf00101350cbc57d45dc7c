@@ -1,0 +1,110 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/menu")
+public class MenuServlet extends HttpServlet {
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String action = request.getParameter("action");
+
+        switch (action.toLowerCase()) {
+            case "add":
+                addMenu(request, response);
+                break;
+            case "update":
+                updateMenu(request, response);
+                break;
+            case "delete":
+                deleteMenu(request, response);
+                break;
+            default:
+                response.getWriter().println("Invalid action");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String action = request.getParameter("action");
+
+        switch (action.toLowerCase()) {
+            case "list":
+                listMenu(request, response);
+                break;
+            case "byrestaurant":
+                listMenuByRestaurant(request, response);
+                break;
+            default:
+                response.getWriter().println("Invalid action");
+        }
+    }
+
+    // ===== Menu CRUD =====
+    private void addMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Menu menu = extractMenuFromRequest(request);
+        boolean success = menuDAO.addMenuItem(menu);
+        response.getWriter().println(success ? "Menu item added" : "Failed to add menu item");
+    }
+
+    private void updateMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Menu menu = extractMenuFromRequest(request);
+        menu.setMenuId(Integer.parseInt(request.getParameter("menuId")));
+        boolean success = menuDAO.updateMenuItem(menu);
+        response.getWriter().println(success ? "Menu item updated" : "Failed to update menu item");
+    }
+
+    private void deleteMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int menuId = Integer.parseInt(request.getParameter("menuId"));
+        boolean success = menuDAO.deleteMenuItem(menuId);
+        response.getWriter().println(success ? "Menu item deleted" : "Failed to delete menu item");
+    }
+
+    private void listMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        List<Menu> list = menuDAO.getAllMenuItems();
+        request.setAttribute("menuList", list);
+        try {
+			request.getRequestDispatcher("menu.jsp").forward(request, response);
+		} catch (ServletException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+    private void listMenuByRestaurant(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        int restaurantId = Integer.parseInt(request.getParameter("restaurantId"));
+        List<Menu> list = menuDAO.getMenuByRestaurant(restaurantId);
+
+        request.setAttribute("menuList", list); // attach list to request
+        request.getRequestDispatcher("menu.jsp").forward(request, response);
+    }
+
+    // ===== Helper Method =====
+    private Menu extractMenuFromRequest(HttpServletRequest request) {
+        Menu menu = new Menu();
+        menu.setRestaurantId(Integer.parseInt(request.getParameter("restaurantId")));
+        menu.setItemName(request.getParameter("itemName"));
+        menu.setDescription(request.getParameter("description"));
+        menu.setPrice(Double.parseDouble(request.getParameter("price")));
+        menu.setAvailable(Boolean.parseBoolean(request.getParameter("isAvailable")));
+        return menu;
+    }
+}

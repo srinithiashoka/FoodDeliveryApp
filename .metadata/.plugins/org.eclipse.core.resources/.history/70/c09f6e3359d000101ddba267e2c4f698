@@ -1,0 +1,56 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Success</title>
+<style>
+    /* Toast CSS */
+    #toast {
+        visibility: hidden;
+        min-width: 150px;
+        max-width: 250px;
+        background-color: #2ed573;
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        padding: 12px;
+        position: fixed;
+        z-index: 9999;
+        top: 20px;
+        right: 20px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.3s, visibility 0.3s;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    #toast.show {
+        visibility: visible;
+        opacity: 1;
+    }
+</style>
+</head>
+<body>
+
+<div id="toast">Order placed successfully!</div>
+
+<script>
+function showToast() {
+    const toast = document.getElementById("toast");
+    toast.className = "show";
+    setTimeout(() => {
+        toast.className = toast.className.replace("show", "");
+    }, 3000);
+}
+
+// Show toast on page load
+window.onload = showToast;
+
+// Optional: redirect after 2 seconds
+setTimeout(() => {
+    window.location.href = "trackorder.jsp"; // replace with actual page
+}, 2000);
+</script>
+
+</body>
+</html>

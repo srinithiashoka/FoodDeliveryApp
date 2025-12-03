@@ -1,0 +1,17 @@
+package com.foodapp.dao;
+
+import java.util.List;
+import com.foodapp.model.Order;
+
+public interface OrderDAO {
+    int addOrderReturnId(Order order);
+    boolean updateOrder(Order order);
+    boolean deleteOrder(int orderId);
+    Order getOrderById(int orderId);
+    List<Order> getAllOrders();
+    List<Order> getOrdersByUser(int userId);
+    List<Order> getOrdersByRestaurant(int restaurantId);
+
+    // Add this method to get the last order of a user
+    Order getLastOrderByUserId(int userId);
+}

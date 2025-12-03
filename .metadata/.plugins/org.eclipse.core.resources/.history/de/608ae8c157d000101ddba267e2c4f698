@@ -1,0 +1,87 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.dao.impl.OrderDAOImpl;
+import com.foodapp.dao.impl.OrderItemDAOImpl;
+import com.foodapp.model.CartItem;
+import com.foodapp.model.Order;
+import com.foodapp.model.OrderItem;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.List;
+
+@WebServlet("/confirmOrder")
+public class ConfirmOrderServlet extends HttpServlet {
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        String payment = request.getParameter("payment");
+
+        CartDAOImpl cartDAO = new CartDAOImpl();
+        OrderDAOImpl orderDAO = new OrderDAOImpl();
+        OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+
+        List<CartItem> cartItems = cartDAO.getCartByUser(user.getUserId());
+
+        if (cartItems.isEmpty()) {
+            response.sendRedirect("cart.jsp");
+            return;
+        }
+
+        // Calculate totals
+        double subtotal = 0;
+        for (CartItem item : cartItems) {
+            subtotal += item.getPrice() * item.getQuantity();
+        }
+        double tax = subtotal * 0.05;
+        double discount = subtotal * 0.1;
+        double grandTotal = subtotal + tax - discount;
+
+        // Create Order
+        Order order = new Order();
+        order.setUserId(user.getUserId());
+        order.setRestaurantId(cartItems.get(0).getRestaurantId()); // assuming all items from same restaurant
+        order.setOrderDate(new Timestamp(System.currentTimeMillis()));
+        order.setTotalAmount(grandTotal);
+        order.setStatus("Pending");
+        order.setPaymentMode(payment);
+
+        int orderId = orderDAO.addOrderReturnId(order); // add order and get generated ID
+
+        if (orderId > 0) {
+            // Save Order Items
+            for (CartItem cartItem : cartItems) {
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrderId(orderId);
+                orderItem.setMenuId(cartItem.getMenuId());
+                orderItem.setQuantity(cartItem.getQuantity());
+                orderItem.setTotalPrice(cartItem.getPrice() * cartItem.getQuantity());
+                orderItemDAO.addOrderItem(orderItem);
+            }
+
+            // Clear user's cart
+            cartDAO.clearCartByUserId(user.getUserId());
+
+            // Redirect to success page
+            response.sendRedirect("success.jsp");
+        } else {
+            // If order failed
+            response.sendRedirect("cart.jsp?error=OrderFailed");
+        }
+    }
+}

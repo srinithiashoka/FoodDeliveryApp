@@ -1,0 +1,92 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants = (location != null || restaurantName != null) 
+            ? dao.searchRestaurants(location, restaurantName) 
+            : dao.getActiveRestaurants();
+    User user = (User) session.getAttribute("user");
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FoodHub - Home</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo"><i class="fa-solid fa-motorcycle scooter-icon"></i> FoodHub</div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if(user == null) { %>
+                    <button onclick="location.href='login.jsp'">Login</button>
+                    <button onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png" alt="Cart">
+                    </a>
+                    <span class="cart-badge">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<section class="restaurants">
+    <div class="container">
+        <h2>Top Restaurants</h2>
+        <div class="restaurant-grid">
+            <% for(Restaurant r : restaurants) { %>
+                <a href="menu?action=byRestaurant&restaurantId=<%= r.getRestaurantId() %>">
+                    <div class="restaurant-card">
+                        <img src="<%= r.getImagePath() %>">
+                        <div class="restaurant-info">
+                            <h3><%= r.getName() %></h3>
+                            <span><%= r.getCuisineType() %></span>
+                        </div>
+                    </div>
+                </a>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+function updateCartBadge() {
+    fetch("<%=request.getContextPath()%>/cart?action=viewcount")
+        .then(res => res.json())
+        .then(data => {
+            document.querySelector(".cart-badge").textContent = data.count || 0;
+        });
+}
+
+window.onload = updateCartBadge;
+</script>
+
+</body>
+</html>

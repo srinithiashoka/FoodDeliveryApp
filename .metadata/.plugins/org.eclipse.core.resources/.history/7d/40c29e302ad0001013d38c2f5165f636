@@ -1,0 +1,251 @@
+/* =======================
+   RESET
+======================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* =======================
+   HEADER
+======================= */
+header {
+    width: 100%;
+    background: #ff5b6a; /* light pinkish red */
+    padding: 18px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar {
+    width: 90%;
+    max-width: 1250px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Nav Links */
+.navbar ul {
+    list-style: none;
+    display: flex;
+    gap: 40px;
+}
+
+.navbar ul li a {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Login & SignUp Buttons */
+.login-btn, .signup-btn {
+    padding: 10px 22px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.login-btn {
+    background: #ff7d8a;
+    color: white;
+}
+
+.signup-btn {
+    background: #20c657;
+    color: white;
+}
+
+/* =======================
+   HERO SECTION
+======================= */
+.hero {
+    padding: 120px 20px 90px 20px;
+    text-align: center;
+    background: linear-gradient(to bottom, #ff6175, #ff4a5e);
+    color: white;
+}
+
+.hero h1 {
+    font-size: 45px;
+    font-weight: 900;
+    line-height: 1.3;
+}
+
+.hero p {
+    margin-top: 10px;
+    font-size: 18px;
+    opacity: 0.95;
+}
+
+/* =======================
+   SEARCH CARD
+======================= */
+.search-card {
+    max-width: 1150px;
+    background: white;
+    margin: 40px auto 0 auto;
+    padding: 25px 30px;
+    border-radius: 40px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+
+.search-card input {
+    width: 330px;
+    padding: 18px 20px;
+    font-size: 15px;
+    border-radius: 50px;
+    border: 1px solid #ddd;
+    outline: none;
+    transition: 0.3s;
+}
+
+.search-card input:hover {
+    background: #f9f9f9;
+}
+
+.search-card button {
+    padding: 18px 28px;
+    background: #20c657;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.search-card button:hover {
+    background: #17b34b;
+}
+
+/* =======================
+   SECTION TITLES
+======================= */
+.section-title {
+    margin-top: 70px;
+    text-align: center;
+    font-size: 38px;
+    color: #ff4153;
+    font-weight: 800;
+}
+
+/* =======================
+   RESTAURANT CARDS
+======================= */
+.card-container {
+    max-width: 1200px;
+    margin: 50px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.restaurant-card {
+    background: white;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-5px);
+}
+
+.restaurant-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+}
+
+.restaurant-card .card-body {
+    padding: 20px;
+}
+
+.restaurant-card .card-body h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff4153;
+    margin-bottom: 8px;
+}
+
+.restaurant-card .card-body p {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.restaurant-card .card-body .price {
+    font-weight: 600;
+    color: #20c657;
+}
+
+/* =======================
+   LOCATION BOXES
+======================= */
+.location-boxes {
+    max-width: 1150px;
+    margin: 50px auto;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.location-box {
+    flex: 1 1 200px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.location-box:hover {
+    background: #fff0f2;
+}
+
+.location-box h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff5b6a;
+}
+
+/* =======================
+   FOOTER
+======================= */
+footer {
+    background: #ff5b6a;
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 60px;
+}
+
+footer p {
+    font-size: 16px;
+}

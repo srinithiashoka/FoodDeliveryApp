@@ -1,0 +1,85 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+private CartDAO cartDAO = new CartDAOImpl();
+
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    response.setContentType("text/plain");
+    HttpSession session = request.getSession();
+    User user = (User) session.getAttribute("user");
+
+    if (user == null) {
+        response.getWriter().write("notLoggedIn");
+        return;
+    }
+
+    String action = request.getParameter("action");
+    int userId = user.getUserId();
+
+    try {
+        switch (action) {
+
+            case "add": {
+                int menuId = Integer.parseInt(request.getParameter("menuId"));
+                int quantity = Integer.parseInt(request.getParameter("quantity"));
+                boolean success = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+                response.getWriter().write(success ? "success" : "fail");
+                break;
+            }
+
+            case "delete": {
+                int menuId = Integer.parseInt(request.getParameter("menuId"));
+                boolean success = cartDAO.removeFromCart(userId, menuId);
+                response.getWriter().write(success ? "success" : "fail");
+                break;
+            }
+
+            case "clear": {
+                boolean success = cartDAO.clearCartByUserId(userId);
+                response.getWriter().write(success ? "success" : "fail");
+                break;
+            }
+
+            default:
+                response.getWriter().write("fail");
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        response.getWriter().write("error");
+    }
+}
+
+@Override
+protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    String action = request.getParameter("action");
+    HttpSession session = request.getSession();
+    User user = (User) session.getAttribute("user");
+
+    if ("viewCount".equals(action)) {
+        response.getWriter().write(user == null ? "0" : String.valueOf(cartDAO.getCartItemCount(user.getUserId())));
+        return;
+    }
+
+    // Default: show cart page
+    request.getRequestDispatcher("cart.jsp").forward(request, response);
+}
+
+
+}

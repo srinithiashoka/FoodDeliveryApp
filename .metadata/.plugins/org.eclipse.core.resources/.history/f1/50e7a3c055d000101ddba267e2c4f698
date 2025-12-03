@@ -1,0 +1,116 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.User" %>
+<%@ page import="com.foodapp.model.OrderItem" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    if(user == null){
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    Integer orderId = (Integer) session.getAttribute("lastOrderId");
+    if(orderId == null){
+        response.sendRedirect("home.jsp");
+        return;
+    }
+
+    OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    // Correct method to get order items
+    List<OrderItem> orderItems = orderItemDAO.getItemsByOrder(orderId);
+
+    double totalAmount = 0;
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<style>
+.track-section {flex:1; padding:40px 20px;}
+.track-box {background:#fff; padding:25px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.1); max-width:700px; margin:0 auto;}
+.track-box h2 {text-align:center; color:#ff4757; margin-bottom:20px;}
+.order-item {display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eee;}
+.order-item img {width:60px; height:60px; object-fit:cover; border-radius:8px;}
+.order-item-info {flex:1;}
+.order-item-info h4 {margin:0; font-size:1rem; color:#333;}
+.order-item-info p {margin:2px 0; font-size:0.9rem; color:#555;}
+.order-total {text-align:right; margin-top:15px; font-size:1.1rem; font-weight:bold; color:#2ed573;}
+.back-home {display:inline-block; margin-top:20px; padding:10px 18px; background:#ff4757; color:white; border-radius:8px; text-decoration:none; transition:0.3s;}
+.back-home:hover {background:#e03c4c; transform:scale(1.03);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span>Welcome, <%= user.getUsername() %></span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- TRACK ORDER -->
+<section class="track-section">
+    <div class="track-box">
+        <h2>Track Your Order (#<%= orderId %>)</h2>
+        
+        <% if(orderItems.isEmpty()){ %>
+            <p style="text-align:center; color:#555;">No items found for this order.</p>
+        <% } else {
+            for(OrderItem item : orderItems){
+                Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+                if(menu != null){
+                    double itemTotal = item.getQuantity() * menu.getPrice();
+                    totalAmount += itemTotal;
+        %>
+            <div class="order-item">
+                <img src="<%= menu.getImagePath()!=null && !menu.getImagePath().isEmpty() ? menu.getImagePath() : "images/default-food.jpg" %>" alt="<%= menu.getItemName() %>">
+                <div class="order-item-info">
+                    <h4><%= menu.getItemName() %></h4>
+                    <p>Quantity: <%= item.getQuantity() %> | Price: ₹<%= String.format("%.2f", menu.getPrice()) %></p>
+                    <p>Total: ₹<%= String.format("%.2f", itemTotal) %></p>
+                </div>
+            </div>
+        <%  } } %>
+
+        <div class="order-total">Grand Total: ₹<%= String.format("%.2f", totalAmount) %></div>
+        <a href="home.jsp" class="back-home">Back to Home</a>
+        <% } %>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved | Made with ❤️ in Coimbatore</p>
+    </div>
+</footer>
+
+</body>
+</html>

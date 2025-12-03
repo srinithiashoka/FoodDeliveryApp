@@ -1,0 +1,211 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.OrderDAO;
+import com.foodapp.model.Order;
+import com.foodapp.util.DBConnection;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class OrderDAOImpl implements OrderDAO {
+
+    @Override
+    public int addOrderReturnId(Order order) {
+        int generatedId = 0;
+
+        String sql = "INSERT INTO orders (userId, restaurantId, totalAmount, status, paymentMode, orderDate) " +
+                     "VALUES (?,?,?,?,?,NOW())";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setInt(1, order.getUserId());
+            ps.setInt(2, order.getRestaurantId());
+            ps.setDouble(3, order.getTotalAmount());
+            ps.setString(4, order.getStatus());
+            ps.setString(5, order.getPaymentMode());
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    generatedId = rs.getInt(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return generatedId;
+    }
+
+    @Override
+    public boolean updateOrder(Order order) {
+        String sql = "UPDATE orders SET userId=?, restaurantId=?, totalAmount=?, status=?, paymentMode=? WHERE orderId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, order.getUserId());
+            ps.setInt(2, order.getRestaurantId());
+            ps.setDouble(3, order.getTotalAmount());
+            ps.setString(4, order.getStatus());
+            ps.setString(5, order.getPaymentMode());
+            ps.setInt(6, order.getOrderId());
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deleteOrder(int orderId) {
+        String sql = "DELETE FROM orders WHERE orderId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, orderId);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    @Override
+    public Order getOrderById(int orderId) {
+        String sql = "SELECT * FROM orders WHERE orderId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, orderId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return extractOrder(rs);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @Override
+    public List<Order> getAllOrders() {
+        List<Order> list = new ArrayList<>();
+        String sql = "SELECT * FROM orders";
+
+        try (Connection conn = DBConnection.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+                list.add(extractOrder(rs));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    @Override
+    public List<Order> getOrdersByUser(int userId) {
+        List<Order> list = new ArrayList<>();
+        String sql = "SELECT * FROM orders WHERE userId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                list.add(extractOrder(rs));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    @Override
+    public List<Order> getOrdersByRestaurant(int restaurantId) {
+        List<Order> list = new ArrayList<>();
+        String sql = "SELECT * FROM orders WHERE restaurantId=?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, restaurantId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                list.add(extractOrder(rs));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    private Order extractOrder(ResultSet rs) throws SQLException {
+        Order order = new Order();
+        order.setOrderId(rs.getInt("orderId"));
+        order.setUserId(rs.getInt("userId"));
+        order.setRestaurantId(rs.getInt("restaurantId"));
+        order.setTotalAmount(rs.getDouble("totalAmount"));
+        order.setStatus(rs.getString("status"));
+        order.setPaymentMode(rs.getString("paymentMode"));
+        order.setOrderDate(rs.getTimestamp("orderDate"));
+        return order;
+    }
+    @Override
+    public Order getLastOrderByUserId(int userId) {
+        Order order = null;
+        String sql = "SELECT * FROM orders WHERE userId=? ORDER BY orderDate DESC LIMIT 1";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                order = new Order();
+                order.setOrderId(rs.getInt("orderId"));
+                order.setUserId(rs.getInt("userId"));
+                order.setRestaurantId(rs.getInt("restaurantId"));
+                order.setOrderDate(rs.getTimestamp("orderDate"));
+                order.setTotalAmount(rs.getDouble("totalAmount"));
+                order.setStatus(rs.getString("status"));
+                order.setPaymentMode(rs.getString("paymentMode"));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return order;
+    }
+
+
+    
+}

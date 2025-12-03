@@ -1,0 +1,75 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.model.Cart;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.foodapp.util.DBConnection;
+
+public class CartDAOImpl implements CartDAO {
+
+    private static final String ADD = 
+        "INSERT INTO cart (userId, menuId, quantity) VALUES (?, ?, ?) "
+        + "ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)";
+
+    private static final String UPDATE =
+        "UPDATE cart SET quantity=? WHERE userId=? AND menuId=?";
+
+    private static final String DELETE =
+        "DELETE FROM cart WHERE userId=? AND menuId=?";
+
+    private static final String COUNT =
+        "SELECT SUM(quantity) FROM cart WHERE userId=?";
+
+    @Override
+    public boolean addToCart(Cart cart) {
+        try (Connection con = DBUtil.getConnection();
+             PreparedStatement ps = con.prepareStatement(ADD)) {
+            ps.setInt(1, cart.getUserId());
+            ps.setInt(2, cart.getMenuId());
+            ps.setInt(3, cart.getQuantity());
+            return ps.executeUpdate() > 0;
+        } catch(Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
+    @Override
+    public boolean updateCart(Cart cart) {
+        try (Connection con = DBUtil.getConnection();
+             PreparedStatement ps = con.prepareStatement(UPDATE)) {
+            ps.setInt(1, cart.getQuantity());
+            ps.setInt(2, cart.getUserId());
+            ps.setInt(3, cart.getMenuId());
+            return ps.executeUpdate() > 0;
+        } catch(Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
+    @Override
+    public boolean removeFromCart(int userId, int menuId) {
+        try (Connection con = DBUtil.getConnection();
+             PreparedStatement ps = con.prepareStatement(DELETE)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, menuId);
+            return ps.executeUpdate() > 0;
+        } catch(Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
+    @Override
+    public int getCartCount(int userId) {
+        try (Connection con = DBUtil.getConnection();
+             PreparedStatement ps = con.prepareStatement(COUNT)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) return rs.getInt(1);
+
+        } catch(Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+}

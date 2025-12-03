@@ -1,0 +1,208 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+    double subtotal = 0;
+    for (CartItem item : cartItems) {
+        subtotal += item.getPrice() * item.getQuantity();
+    }
+    double tax = subtotal * 0.05;        
+    double discount = subtotal * 0.10;   
+    double grandTotal = subtotal + tax - discount;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodHub - Your Cart</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<style>
+/* ================= Cart Table with Images ================= */
+.cart-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.cart-table th, .cart-table td { border: 1px solid #ccc; padding: 12px; text-align: center; vertical-align: middle; }
+.cart-table th { background: #ff4757; color: #fff; }
+.cart-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; }
+
+/* Buttons */
+.qty-btn, .btn-clear, #checkout-btn { cursor: pointer; border-radius: 6px; padding: 6px 12px; border: none; font-weight: 600; }
+.qty-btn { background: #ddd; }
+.qty-btn:hover { background: #bbb; }
+.btn-clear { background: #ff6b81; color: #fff; margin-top: 10px; }
+#checkout-btn { background: #2ed573; color: #fff; width: 100%; margin-top: 15px; font-size: 1rem; }
+
+/* Totals & Payment */
+.totals-box { max-width: 450px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background: #fff; }
+.totals-box p { display: flex; justify-content: space-between; font-weight: 600; margin: 8px 0; }
+.payment-methods { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.payment-methods h4 { color: #ff4757; margin-bottom: 5px; }
+.payment-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; border: 1px solid #ddd; background: #f7f7f7; transition: all 0.3s ease; cursor: pointer; }
+.payment-option input { accent-color: #ff4757; }
+.payment-option:hover { border-color: #ff4757; background: #fff0f2; }
+
+/* Responsive */
+@media(max-width: 767px){
+    .cart-table th, .cart-table td { font-size: 0.85rem; padding: 8px; }
+    .cart-item-img { width: 60px; height: 60px; }
+    .totals-box { width: 95%; padding: 15px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span class="welcome-text">Welcome, <%= user.getUsername() %></span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- CART SECTION -->
+<section class="menu-container">
+    <div class="container">
+        <h2>Your Cart</h2>
+
+        <% if (cartItems.isEmpty()) { %>
+            <p style="text-align:center;color:red;">No items in cart</p>
+        <% } else { %>
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Image</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cart-body">
+                    <% for (CartItem item : cartItems) { 
+                        String imgPath = item.getImagePath();
+                        if(imgPath == null || imgPath.isEmpty()) imgPath = "images/restaurants/default.jpg";
+                    %>
+                        <tr data-menuid="<%= item.getMenuId() %>">
+                            <td><%= item.getFoodName() %></td>
+                            <td><img src="<%= imgPath %>" class="cart-item-img" alt="<%= item.getFoodName() %>"></td>
+                            <td>₹<span class="price"><%= item.getPrice() %></span></td>
+                            <td class="qty"><%= item.getQuantity() %></td>
+                            <td>₹<span class="total"><%= item.getPrice() * item.getQuantity() %></span></td>
+                            <td>
+                                <button class="qty-btn increase">+</button>
+                                <button class="qty-btn decrease">-</button>
+                                <button class="qty-btn remove-btn" style="background:#ff6b81;color:#fff;">Remove</button>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+
+            <!-- Totals and Payment -->
+            <div class="totals-box">
+                <p>Subtotal: <span>₹<%= String.format("%.2f", subtotal) %></span></p>
+                <p>Tax (5%): <span>₹<%= String.format("%.2f", tax) %></span></p>
+                <p>Discount (10%): <span>-₹<%= String.format("%.2f", discount) %></span></p>
+                <p style="font-size:1.1rem;">Grand Total: <span>₹<%= String.format("%.2f", grandTotal) %></span></p>
+
+                <!-- PAYMENT METHODS -->
+                <div class="payment-methods">
+                    <h4>Choose Payment Method</h4>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="card" checked> Card / Netbanking
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="upi"> UPI
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="cod"> Cash on Delivery
+                    </label>
+                </div>
+
+                <button id="checkout-btn">Proceed to Checkout</button>
+            </div>
+        <% } %>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+function updateGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('#cart-body tr').forEach(row => {
+        const price = parseFloat(row.querySelector('.price').textContent);
+        const qty = parseInt(row.querySelector('.qty').textContent);
+        row.querySelector('.total').textContent = (price * qty).toFixed(2);
+        total += price * qty;
+    });
+    let tax = total * 0.05;
+    let discount = total * 0.10;
+    let grandTotal = total + tax - discount;
+
+    const totalsBox = document.querySelector('.totals-box');
+    if(totalsBox){
+        totalsBox.querySelectorAll('p')[0].querySelector('span').textContent = total.toFixed(2);
+        totalsBox.querySelectorAll('p')[1].querySelector('span').textContent = tax.toFixed(2);
+        totalsBox.querySelectorAll('p')[2].querySelector('span').textContent = discount.toFixed(2);
+        totalsBox.querySelectorAll('p')[3].querySelector('span').textContent = grandTotal.toFixed(2);
+    }
+}
+
+document.getElementById('cart-body')?.addEventListener('click', e => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    const qtyElem = tr.querySelector('.qty');
+    let qty = parseInt(qtyElem.textContent);
+
+    if(e.target.classList.contains('increase')) qty += 1;
+    if(e.target.classList.contains('decrease')) qty -= 1;
+    if(e.target.classList.contains('remove-btn')) qty = 0;
+
+    if(qty <= 0) tr.remove();
+    else qtyElem.textContent = qty;
+
+    updateGrandTotal();
+});
+
+document.getElementById('checkout-btn')?.addEventListener('click', () => {
+    const selectedPayment = document.querySelector('input[name="payment"]:checked').value;
+    const grandTotal = document.querySelector('.totals-box p:last-child span').textContent;
+    alert(`Grand Total: ₹${grandTotal}\nPayment Method: ${selectedPayment}`);
+});
+</script>
+</body>
+</html>

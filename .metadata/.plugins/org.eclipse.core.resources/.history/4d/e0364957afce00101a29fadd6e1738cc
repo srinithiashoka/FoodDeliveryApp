@@ -1,0 +1,36 @@
+package com.foodapp.controller;
+
+import java.io.IOException;
+import com.foodapp.dao.UserDAO;
+import com.foodapp.dao.impl.UserDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet("/register")
+public class UserController extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+    private UserDAO dao = new UserDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+
+        User u = new User();
+        u.setName(req.getParameter("name"));
+        u.setUsername(req.getParameter("username"));
+        u.setPassword(req.getParameter("password"));
+        u.setEmail(req.getParameter("email"));
+        u.setPhone(req.getParameter("phone"));
+        u.setAddress(req.getParameter("address"));
+
+        dao.insertUser(u);
+
+        resp.sendRedirect(req.getContextPath() + "/success.jsp");
+    }
+}

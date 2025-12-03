@@ -1,0 +1,47 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="com.foodapp.model.User" %>
+<%@ page session="true" %>
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu</title>
+    <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+    <h1>Menu</h1>
+    <div class="menu-container">
+        <c:forEach var="menu" items="${menuList}">
+            <div class="menu-item">
+                <img src="${menu.imagePath != null ? menu.imagePath : 'images/default-food.png'}" alt="${menu.itemName}" width="150" height="150">
+                <h3>${menu.itemName}</h3>
+                <p>${menu.description}</p>
+                <p>Price: ₹${menu.price}</p>
+                <p>Status: 
+                    <span style="color:${menu.available ? 'green' : 'red'};">
+                        ${menu.available ? 'Available' : 'Unavailable'}
+                    </span>
+                </p>
+                <form action="CartServlet" method="post">
+                    <input type="hidden" name="menuId" value="${menu.menuId}">
+                    <label>Quantity:</label>
+                    <input type="number" name="quantity" value="0" min="0" style="width:50px;">
+                    <button type="submit" name="action" value="add" ${!menu.available ? 'disabled' : ''}>Add to Cart</button>
+                </form>
+            </div>
+        </c:forEach>
+    </div>
+</body>
+</html>

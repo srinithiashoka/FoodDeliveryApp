@@ -1,0 +1,156 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.CartDAO" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    CartDAO cartDAO = new CartDAOImpl();
+    List<CartItem> cartItems = cartDAO.getCartByUser(user.getUserId());
+    double totalAmount = 0;
+    for (CartItem item : cartItems) {
+        totalAmount += item.getPrice() * item.getQuantity();
+    }
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Your Cart</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; }
+        .container { width: 80%; margin: 20px auto; }
+        table { width: 100%; border-collapse: collapse; background: #fff; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f1f1f1; }
+        button { padding: 6px 12px; margin: 2px; cursor: pointer; }
+        .toast { visibility: hidden; min-width: 200px; margin-left: -100px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 8px; position: fixed; z-index: 1; left: 50%; bottom: 30px; font-size: 14px; }
+        .toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 1.5s; animation: fadein 0.5s, fadeout 0.5s 1.5s; }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Your Cart</h2>
+
+    <c:choose>
+        <% if (cartItems.isEmpty()) { %>
+            <p>No items in cart.</p>
+        <% } else { %>
+            <table>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+                <% for (CartItem item : cartItems) { %>
+                <tr data-menuid="<%= item.getMenuId() %>">
+                    <td><%= item.getFoodName() %></td>
+                    <td>₹<%= item.getPrice() %></td>
+                    <td class="qty"><%= item.getQuantity() %></td>
+                    <td>₹<%= item.getPrice() * item.getQuantity() %></td>
+                    <td>
+                        <button class="increase">+</button>
+                        <button class="decrease">-</button>
+                        <button class="remove-btn">Remove</button>
+                    </td>
+                </tr>
+                <% } %>
+            </table>
+
+            <h3>Total Amount: ₹<%= totalAmount %></h3>
+            <button id="clear-cart">Clear Cart</button>
+        <% } %>
+    </c:choose>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function updateCart(menuId, quantityChange, action) {
+    let body = `action=${action}&menuId=${menuId}`;
+    if (action === "add") {
+        body += `&quantity=${quantityChange}`;
+    }
+
+    fetch("cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast(data.message || "Updated");
+        location.reload();
+    })
+    .catch(err => {
+        console.error("Fetch error:", err);
+        showToast("Network error");
+    });
+}
+
+// INCREASE
+document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        updateCart(menuId, 1, "add");
+    });
+});
+
+// DECREASE
+document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        const qty = parseInt(tr.querySelector(".qty").textContent);
+        if (qty <= 1) {
+            updateCart(menuId, 0, "remove");
+        } else {
+            updateCart(menuId, -1, "add");
+        }
+    });
+});
+
+// REMOVE
+document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const menuId = parseInt(tr.dataset.menuid, 10);
+        updateCart(menuId, 0, "remove");
+    });
+});
+
+// CLEAR CART
+document.getElementById('clear-cart')?.addEventListener('click', () => {
+    fetch("cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "action=clear"
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast("Cart cleared");
+        location.reload();
+    });
+});
+</script>
+</body>
+</html>

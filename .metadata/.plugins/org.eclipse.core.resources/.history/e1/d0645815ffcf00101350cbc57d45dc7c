@@ -1,0 +1,91 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        // Debug logging
+        System.out.println("CartServlet: action='" + action + "', menuIdStr='" + menuIdStr + "', quantityStr='" + quantityStr + "'");
+
+        // EARLY EXIT for empty parameters
+        if ((action == null || action.trim().isEmpty()) || 
+            (menuIdStr == null || menuIdStr.trim().isEmpty()) ||
+            (quantityStr == null || quantityStr.trim().isEmpty())) {
+            System.out.println("CartServlet: Missing required parameters");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Missing required parameters\"}");
+            return;
+        }
+
+        int userId = user.getUserId();
+        int menuId = 0;
+        int quantity = 0;
+
+        try {
+            menuId = Integer.parseInt(menuIdStr.trim());
+            quantity = Integer.parseInt(quantityStr.trim());
+
+            if (menuId <= 0 || quantity < 0) {
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}");
+                return;
+            }
+
+        } catch (NumberFormatException e) {
+            System.out.println("CartServlet NumberFormatException: " + e.getMessage());
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}");
+            return;
+        }
+
+        // Rest of switch statement unchanged...
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+
+        if ("viewcount".equalsIgnoreCase(action)) {
+            int count = cartDAO.getCartItemCount(userId);
+            response.getWriter().write("{\"count\":" + count + "}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+}

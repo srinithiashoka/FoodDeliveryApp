@@ -1,0 +1,149 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.User"%>
+<%@ page import="com.foodapp.model.OrderItem"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl"%>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl"%>
+
+<%
+    User user = (User) session.getAttribute("user");
+    Integer orderId = (Integer) session.getAttribute("lastOrderId"); // or pass as request parameter
+
+    if(orderId == null){
+        response.sendRedirect("home.jsp");
+        return;
+    }
+
+    // Fetch order items
+    OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+    List<OrderItem> orderItems = orderItemDAO.getItemsByOrder(orderId);
+
+    // Simulated order status (in real app, fetch from Order table)
+    String orderStatus = "Out for Delivery"; // Options: "Order Placed", "Preparing", "Out for Delivery", "Delivered"
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<style>
+body {background:#f9f9f9;color:#333;display:flex;flex-direction:column;min-height:100vh;}
+.container {width:90%;max-width:1200px;margin:auto;}
+header, footer {background:#ff4757;color:white;padding:12px 0;text-align:center;}
+h2 {margin-bottom:15px;text-align:center;}
+.table-container {background:white;padding:20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.1);margin:20px auto;}
+table {width:100%;border-collapse:collapse;margin-top:20px;}
+th, td {padding:10px;text-align:center;border-bottom:1px solid #ddd;}
+th {background:#ff4757;color:white;}
+.total-row td {font-weight:bold;}
+.back-btn, .home-btn {margin-top:20px;display:inline-block;padding:10px 18px;border-radius:6px;font-weight:bold;color:white;text-decoration:none;transition:0.3s;margin-right:10px;}
+.back-btn {background:#2ed573;}
+.back-btn:hover {background:#28c76f;}
+.home-btn {background:#1e90ff;}
+.home-btn:hover {background:#187bcd;}
+
+/* ORDER STATUS BAR */
+.status-container {display:flex;justify-content:space-between;align-items:center;margin:30px 0 20px 0;position:relative;}
+.status-step {flex:1;text-align:center;position:relative;}
+.status-step::before {content:"";position:absolute;top:12px;left:50%;height:4px;width:100%;background:#ddd;z-index:0;transform:translateX(-50%);}
+.status-step:first-child::before {width:50%;left:50%;}
+.status-step:last-child::before {width:50%;left:0;}
+.status-circle {width:24px;height:24px;border-radius:50%;background:#ddd;margin:0 auto;position:relative;z-index:1;transition:0.3s;}
+.status-label {margin-top:8px;font-size:0.85rem;color:#555;}
+.status-completed .status-circle {background:#2ed573;}
+.status-current .status-circle {background:#ff4757;}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <h2>FoodHub - Track Your Order</h2>
+    </div>
+</header>
+
+<div class="container table-container">
+    <h2>Order Status</h2>
+
+    <div class="status-container">
+        <div class="status-step <%= orderStatus.equals("Order Placed") || orderStatus.equals("Preparing") || orderStatus.equals("Out for Delivery") || orderStatus.equals("Delivered") ? "status-completed" : "" %> <%= orderStatus.equals("Order Placed") ? "status-current" : "" %>">
+            <div class="status-circle"></div>
+            <div class="status-label">Order Placed</div>
+        </div>
+        <div class="status-step <%= orderStatus.equals("Preparing") || orderStatus.equals("Out for Delivery") || orderStatus.equals("Delivered") ? "status-completed" : "" %> <%= orderStatus.equals("Preparing") ? "status-current" : "" %>">
+            <div class="status-circle"></div>
+            <div class="status-label">Preparing</div>
+        </div>
+        <div class="status-step <%= orderStatus.equals("Out for Delivery") || orderStatus.equals("Delivered") ? "status-completed" : "" %> <%= orderStatus.equals("Out for Delivery") ? "status-current" : "" %>">
+            <div class="status-circle"></div>
+            <div class="status-label">Out for Delivery</div>
+        </div>
+        <div class="status-step <%= orderStatus.equals("Delivered") ? "status-current status-completed" : "" %>">
+            <div class="status-circle"></div>
+            <div class="status-label">Delivered</div>
+        </div>
+    </div>
+
+    <h2>Order Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%
+                double grandTotal = 0;
+                int count = 1;
+                for(OrderItem item : orderItems){
+                    Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+                    if(menu != null){
+                        double itemTotal = item.getQuantity() * menu.getPrice();
+                        grandTotal += itemTotal;
+            %>
+            <tr>
+                <td><%= count++ %></td>
+                <td><%= menu.getItemName() %></td>
+                <td><%= item.getQuantity() %></td>
+                <td>₹<%= String.format("%.2f", menu.getPrice()) %></td>
+                <td>₹<%= String.format("%.2f", itemTotal) %></td>
+            </tr>
+            <%
+                    } else {
+            %>
+            <tr>
+                <td colspan="5" style="color:red;">Menu item not found for ID: <%= item.getMenuId() %></td>
+            </tr>
+            <%
+                    }
+                }
+            %>
+            <tr class="total-row">
+                <td colspan="4">Grand Total</td>
+                <td>₹<%= String.format("%.2f", grandTotal) %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="home.jsp" class="home-btn">Back to Home</a>
+    <a href="trackorder.jsp?orderId=<%= orderId %>" class="back-btn">Refresh / Track Again</a>
+</div>
+
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved | Made with ❤️ in Coimbatore</p>
+    </div>
+</footer>
+
+</body>
+</html>

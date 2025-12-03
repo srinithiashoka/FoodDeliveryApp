@@ -1,0 +1,113 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
+<%
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+    double subtotal = 0;
+    for(CartItem item : cartItems){
+        subtotal += item.getPrice() * item.getQuantity();
+    }
+    double tax = subtotal * 0.05;
+    double discount = subtotal * 0.1;
+    double grandTotal = subtotal + tax - discount;
+    
+    // Set attributes for JSTL
+    pageContext.setAttribute("cartItems", cartItems);
+    pageContext.setAttribute("user", user);
+    pageContext.setAttribute("subtotal", subtotal);
+    pageContext.setAttribute("tax", tax);
+    pageContext.setAttribute("discount", discount);
+    pageContext.setAttribute("grandTotal", grandTotal);
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodHub - Your Cart</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/cart.css">
+</head>
+<body>
+
+<!-- Header same as before -->
+
+<div class="cart-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+    <h2>Your Cart</h2>
+
+    :choose>
+        :when test="${empty cartItems}">
+            <p class="empty-cart">Your cart is empty.</p>
+        </c:when>
+        :otherwise>
+            :forEach var="item" items="${cartItems}">
+                :set var="menu" value="${menuDAO.getMenuItemById(item.menuId)}"/>
+                :set var="imagePath" value="${not empty menu.imagePath ? menu.imagePath : 'images/default-food.jpg'}"/>
+                
+                <div class="cart-item" data-menu-id="${item.menuId}">
+                    <div class="cart-image">
+                        <img src="${pageContext.request.contextPath}/${imagePath}" 
+                             alt=":out value='${item.foodName}'/>" 
+                             onerror="this.src='${pageContext.request.contextPath}/images/default-food.jpg'"
+                             style="width: 80px; height: 80px; object-fit: cover;">
+                    </div>
+                    <div class="cart-content">
+                        <div class="cart-header">
+                            <h3>:out value="${item.foodName}"/></h3>
+                            <div class="cart-price" data-price="${item.price}">₹:out value="${item.price}"/></div>
+                        </div>
+                        <div class="quantity-controls">
+                            <button class="qty-btn decrease">-</button>
+                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" max="99">
+                            <button class="qty-btn increase">+</button>
+                            <button class="btn-remove">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </c:forEach>
+        </c:otherwise>
+    </c:choose>
+
+    <!-- Summary section same as before, but use JSTL -->
+    <div class="cart-summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">Subtotal <span id="subtotal">₹${subtotal}</span></div>
+        <div class="summary-row">Tax (5%) <span id="tax">₹${tax}</span></div>
+        <div class="summary-row">Discount (10%) <span id="discount">-₹${discount}</span></div>
+        <div class="summary-row grand-total">Grand Total <span id="grandTotal">₹${grandTotal}</span></div>
+        <!-- Payment & checkout same -->
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.quantity-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const item = this.closest('.cart-item');
+        const menuId = item.dataset.menuId;
+        const qty = this.value;
+        
+        // AJAX update cart
+        fetch('updateCart', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `menuId=${menuId}&quantity=${qty}`
+        }).then(() => updateTotals());
+    });
+});
+// Rest of JS same
+</script>
+</body>
+</html>

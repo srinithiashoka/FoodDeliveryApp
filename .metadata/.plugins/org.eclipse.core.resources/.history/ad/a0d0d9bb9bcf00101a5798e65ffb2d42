@@ -1,0 +1,90 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("notLoggedIn");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        if (menuIdStr == null || menuIdStr.isEmpty()) {
+            response.getWriter().write("fail");
+            return;
+        }
+
+        int menuId = Integer.parseInt(menuIdStr);
+        int quantity = 0;
+
+        if (quantityStr != null && !quantityStr.trim().isEmpty()) {
+            try {
+                quantity = Integer.parseInt(quantityStr);
+            } catch (NumberFormatException e) {
+                quantity = 0;
+            }
+        }
+
+        try {
+            boolean result;
+            switch (action) {
+                case "add":
+                    if (quantity <= 0) {
+                        response.getWriter().write("fail");
+                        return;
+                    }
+                    result = cartDAO.addOrUpdateCart(user.getUserId(), menuId, quantity);
+                    response.getWriter().write(result ? "success" : "fail");
+                    break;
+
+                case "delete":
+                    result = cartDAO.removeFromCart(user.getUserId(), menuId);
+                    response.getWriter().write(result ? "success" : "fail");
+                    break;
+
+                case "clear":
+                    result = cartDAO.clearCartByUserId(user.getUserId());
+                    response.getWriter().write(result ? "success" : "fail");
+                    break;
+
+                case "viewCount":
+                    int count = cartDAO.getCartItemCount(user.getUserId());
+                    response.getWriter().write(String.valueOf(count));
+                    break;
+
+                default:
+                    response.getWriter().write("fail");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.getWriter().write("error");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.sendRedirect("cart.jsp");
+    }
+}

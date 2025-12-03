@@ -1,0 +1,142 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants;
+
+    if ((location != null && !location.isEmpty()) || (restaurantName != null && !restaurantName.isEmpty())) {
+        restaurants = dao.searchRestaurants(location, restaurantName);
+    } else {
+        restaurants = dao.getActiveRestaurants();
+    }
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FoodHub - Food Delivery App</title>
+
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <link rel="stylesheet" href="css/home.css"> 
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header>
+    <div class="container">
+        <div class="navbar">
+
+            <!-- TEXT LOGO + SCOOTER ICON -->
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <button class="btn btn-login">Login</button>
+                <button class="btn btn-signup">Sign Up</button>
+                <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png"
+                     alt="Cart" title="My Cart">
+            </div>
+        </div>
+    </div>
+</header>
+
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-text-box">
+            <h1>Order food from your favourite restaurants near you</h1>
+            <p>Get your food delivered fast</p>
+        </div>
+
+        <div class="search-box">
+            <form action="home.jsp" method="get" class="search-form">
+
+                <div class="input-wrapper">
+                    <i class="fa fa-map-marker-alt"></i>
+                    <input type="text" name="location" placeholder="Enter your location"
+                           value="<%= location != null ? location : "" %>">
+                </div>
+
+                <div class="input-wrapper">
+                    <i class="fa fa-search"></i>
+                    <input type="text" name="restaurant" placeholder="Search restaurants"
+                           value="<%= restaurantName != null ? restaurantName : "" %>">
+                </div>
+
+                <button type="submit" class="btn btn-login">Find Food</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIES SECTION -->
+<section class="categories">
+    <div class="container">
+        <h2>Popular Categories</h2>
+        <div class="category-grid">
+            <div class="category-card"><img src="images/pizzas.jpg"><p>Pizza</p></div>
+            <div class="category-card"><img src="images/briyani.jpeg"><p>Biryani</p></div>
+            <div class="category-card"><img src="images/burgers.jpg"><p>Burgers</p></div>
+            <div class="category-card"><img src="images/cake.jpg"><p>Cakes</p></div>
+            <div class="category-card"><img src="images/meals.jpeg"><p>Meals</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- RESTAURANTS SECTION -->
+<section class="restaurants">
+    <div class="container">
+        <h2>Top Restaurants Near You</h2>
+
+        <div class="restaurant-grid">
+            <% if (restaurants != null && !restaurants.isEmpty()) {
+                for (Restaurant r : restaurants) { %>
+
+                    <div class="restaurant-card">
+                        <img src="<%= r.getImagePath() %>">
+                        <div class="restaurant-info">
+                            <h3><%= r.getName() %></h3>
+                            <div class="restaurant-meta">
+                                <span><%= r.getCuisineType() %></span>
+                                <span><%= r.getDeliveryTime() %></span>
+                            </div>
+                            <p><%= r.getAddress() %></p>
+                        </div>
+                    </div>
+
+            <%  }
+            } else { %>
+                <p style="text-align:center; width:100%; color:red;">No restaurants found.</p>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+</body>
+</html>

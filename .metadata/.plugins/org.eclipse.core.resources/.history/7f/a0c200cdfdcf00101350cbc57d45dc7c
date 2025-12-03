@@ -1,0 +1,45 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/menu")
+public class MenuServlet extends HttpServlet {
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        String action = request.getParameter("action");
+        String rIdStr = request.getParameter("restaurantId");
+        int restaurantId = 0;
+
+        try {
+            restaurantId = Integer.parseInt(rIdStr != null ? rIdStr : "0");
+            if (restaurantId <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid restaurantId\"}");
+            return;
+        }
+
+        List<Menu> list = menuDAO.getMenuByRestaurant(restaurantId);
+        request.setAttribute("menuList", list);
+        request.getRequestDispatcher("menu.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // For admin CRUD actions if needed
+        response.getWriter().write("{\"status\":\"error\",\"message\":\"POST not supported for this page\"}");
+    }
+}

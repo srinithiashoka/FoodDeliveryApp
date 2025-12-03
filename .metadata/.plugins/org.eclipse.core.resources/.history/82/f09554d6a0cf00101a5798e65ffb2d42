@@ -1,0 +1,34 @@
+package com.foodapp.test;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+
+public class CartInsertionTest {
+
+```
+public static void main(String[] args) {
+
+    // Create DAO instance
+    CartDAO cartDAO = new CartDAOImpl();
+
+    // Test data
+    int userId = 1;      // Replace with a valid userId from your DB
+    int menuId = 2;      // Replace with a valid menuId from your DB
+    int quantity = 3;
+
+    // Try to insert/update cart
+    boolean result = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+
+    if(result) {
+        System.out.println("Cart insertion/update SUCCESS!");
+    } else {
+        System.out.println("Cart insertion/update FAILED!");
+    }
+
+    // Optional: check current cart count for the user
+    int cartCount = cartDAO.getCartItemCount(userId);
+    System.out.println("Current total items in cart for user " + userId + ": " + cartCount);
+}
+```
+
+}

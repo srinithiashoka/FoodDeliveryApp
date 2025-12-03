@@ -1,0 +1,211 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+    Integer cartCount = cartItems.size();
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Cart - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<style>
+/* =======================
+   CART CARDS
+======================= */
+.menu-container { padding: 4rem 0; max-width: 900px; margin:0 auto; }
+
+.cart-card {
+    display: flex;
+    background:#fff;
+    margin-bottom:1.5rem;
+    border-radius:1.5rem;
+    box-shadow:0 8px 20px rgba(0,0,0,0.1);
+    overflow:hidden;
+}
+
+.cart-image { width:120px; height:100px; flex-shrink:0; }
+.cart-image img { width:100%; height:100%; object-fit:cover; border-radius:1.5rem 0 0 1.5rem; }
+
+.cart-content {
+    flex:1;
+    padding:1rem 1.5rem;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.cart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
+.cart-header h4 { margin:0; color:#ff4757; font-size:1rem; }
+.cart-header span { font-weight:bold; }
+
+.quantity-controls { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.75rem; }
+.quantity-input-display { width:40px; height:36px; text-align:center; border-radius:5px; border:1px solid #ccc; background:#f7f7f7; font-size:0.9rem; flex-shrink:0; }
+
+.qty-btn { border:none; background:#ddd; padding:6px 10px; border-radius:5px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+.qty-btn:hover { background:#bbb; }
+.qty-btn.clear { background:#ff6b81; color:#fff; padding:0 12px; }
+
+.btn-remove { background:#ff4757; color:#fff; border:none; border-radius:5px; padding:6px 12px; cursor:pointer; align-self:flex-start; }
+
+.item-total { font-weight:bold; margin-bottom:5px; }
+
+#total-amount { font-weight:bold; font-size:1.2rem; text-align:right; margin-top:1rem; }
+#clear-cart { margin-top:1rem; padding:8px 16px; background:#ff4757; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+
+#toast { visibility:hidden; min-width:150px; max-width:220px; background-color:#2ed573; color:white; text-align:center; border-radius:8px; padding:12px 12px; position:fixed; z-index:9999; top:20px; right:20px; font-size:14px; opacity:0; transition:opacity 0.3s, visibility 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+#toast.show { visibility:visible; opacity:1; }
+
+@media(max-width:767px) {
+    .cart-card { flex-direction:column; }
+    .cart-image { width:100%; height:180px; border-radius:1.5rem 1.5rem 0 0; }
+    .quantity-controls { flex-wrap:wrap; gap:6px; }
+    .qty-btn.clear { flex:1 1 100%; text-align:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span class="welcome-text">Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart ( <%= cartCount %> items )">
+                        <i class="fas fa-shopping-cart cart-icon"></i>
+                    </a>
+                    <% if (cartCount > 0) { %>
+                        <span class="cart-badge"><%= cartCount %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- CART SECTION -->
+<div class="container menu-container">
+<% if(cartItems.isEmpty()) { %>
+    <p>No items in cart</p>
+<% } else { %>
+    <% for(CartItem item: cartItems) { 
+        Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+    %>
+    <div class="cart-card" data-menuid="<%= item.getMenuId() %>">
+        <div class="cart-image">
+            <img src="<%= (menu!=null && menu.getImagePath()!=null && !menu.getImagePath().isEmpty()) ? menu.getImagePath() : "images/restaurants/default.jpg" %>" alt="<%= item.getFoodName() %>">
+        </div>
+        <div class="cart-content">
+            <div class="cart-header">
+                <h4><%= item.getFoodName() %></h4>
+                <span>₹<span class="price"><%= item.getPrice() %></span></span>
+            </div>
+            <div class="quantity-controls">
+                <button class="qty-btn decrease">-</button>
+                <input type="text" value="<%= item.getQuantity() %>" class="quantity-input-display" readonly>
+                <button class="qty-btn increase">+</button>
+                <button class="qty-btn clear">Clear</button>
+            </div>
+            <p class="item-total">Total: ₹<span class="total"><%= item.getPrice()*item.getQuantity() %></span></p>
+            <button class="btn-remove">Remove</button>
+        </div>
+    </div>
+    <% } %>
+    <p id="total-amount">Grand Total: ₹<span id="grand-total"></span></p>
+    <button id="clear-cart">Clear Cart</button>
+<% } %>
+</div>
+
+<div id="toast"></div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+// Toast function
+function showToast(msg){
+    const toast=document.getElementById('toast');
+    toast.textContent=msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'),2000);
+}
+
+// Update Grand Total
+function updateGrandTotal(){
+    let total=0;
+    document.querySelectorAll('.cart-card').forEach(card=>{
+        const price=parseFloat(card.querySelector('.price').textContent);
+        const qty=parseInt(card.querySelector('.quantity-input-display').value);
+        card.querySelector('.total').textContent=(price*qty).toFixed(2);
+        total+=price*qty;
+    });
+    document.getElementById('grand-total').textContent=total.toFixed(2);
+}
+updateGrandTotal();
+
+// Dummy AJAX function placeholders
+function updateCart(menuId, quantityChange, action){
+    showToast('Cart updated');
+    const card=document.querySelector(`.cart-card[data-menuid='${menuId}']`);
+    if(!card) return;
+    const qtyElem=card.querySelector('.quantity-input-display');
+    let qty=parseInt(qtyElem.value);
+    if(action==='add'){ qty+=quantityChange; qtyElem.value=qty>0?qty:0; }
+    else if(action==='remove' || action==='clear'){ card.remove(); }
+    updateGrandTotal();
+}
+
+// Event listeners
+document.querySelectorAll('.cart-card').forEach(card=>{
+    const menuId=parseInt(card.dataset.menuid);
+    card.querySelector('.increase')?.addEventListener('click',()=>updateCart(menuId,1,'add'));
+    card.querySelector('.decrease')?.addEventListener('click',()=>updateCart(menuId,-1,'add'));
+    card.querySelector('.clear')?.addEventListener('click',()=>updateCart(menuId,0,'clear'));
+    card.querySelector('.btn-remove')?.addEventListener('click',()=>updateCart(menuId,0,'remove'));
+});
+
+// Clear Cart
+document.getElementById('clear-cart')?.addEventListener('click',()=>{
+    document.querySelectorAll('.cart-card').forEach(c=>c.remove());
+    document.getElementById('grand-total').textContent='0';
+    showToast('Cart cleared');
+});
+</script>
+</body>
+</html>

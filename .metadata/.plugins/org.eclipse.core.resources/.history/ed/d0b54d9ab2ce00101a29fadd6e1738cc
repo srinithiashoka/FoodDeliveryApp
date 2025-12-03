@@ -1,0 +1,84 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/menu")
+public class MenuServlet extends HttpServlet {
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        if ("add".equalsIgnoreCase(action)) {
+            addMenu(request, response);
+        } else if ("update".equalsIgnoreCase(action)) {
+            updateMenu(request, response);
+        } else if ("delete".equalsIgnoreCase(action)) {
+            deleteMenu(request, response);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        if ("list".equalsIgnoreCase(action)) {
+            listMenu(request, response);
+        } else if ("byRestaurant".equalsIgnoreCase(action)) {
+            listMenuByRestaurant(request, response);
+        }
+    }
+
+    private void addMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Menu m = new Menu();
+        m.setRestaurantId(Integer.parseInt(request.getParameter("restaurantId")));
+        m.setItemName(request.getParameter("itemName"));
+        m.setDescription(request.getParameter("description"));
+        m.setPrice(Double.parseDouble(request.getParameter("price")));
+        m.setIsAvailable(Boolean.parseBoolean(request.getParameter("isAvailable")));
+
+        boolean success = menuDAO.addMenuItem(m);
+        response.getWriter().println(success ? "Menu item added" : "Failed to add menu item");
+    }
+
+    private void updateMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Menu m = new Menu();
+        m.setMenuId(Integer.parseInt(request.getParameter("menuId")));
+        m.setRestaurantId(Integer.parseInt(request.getParameter("restaurantId")));
+        m.setItemName(request.getParameter("itemName"));
+        m.setDescription(request.getParameter("description"));
+        m.setPrice(Double.parseDouble(request.getParameter("price")));
+        m.setIsAvailable(Boolean.parseBoolean(request.getParameter("isAvailable")));
+
+        boolean success = menuDAO.updateMenuItem(m);
+        response.getWriter().println(success ? "Menu item updated" : "Failed to update menu item");
+    }
+
+    private void deleteMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int menuId = Integer.parseInt(request.getParameter("menuId"));
+        boolean success = menuDAO.deleteMenuItem(menuId);
+        response.getWriter().println(success ? "Menu item deleted" : "Failed to delete menu item");
+    }
+
+    private void listMenu(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        List<Menu> list = menuDAO.getAllMenuItems();
+        response.getWriter().println(list);
+    }
+
+    private void listMenuByRestaurant(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int restaurantId = Integer.parseInt(request.getParameter("restaurantId"));
+        List<Menu> list = menuDAO.getMenuByRestaurant(restaurantId);
+        response.getWriter().println(list);
+    }
+}

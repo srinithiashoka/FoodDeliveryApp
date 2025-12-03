@@ -1,0 +1,75 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.foodapp.model.User" %>
+<%
+    User user = (User) session.getAttribute("user");
+    // Get orderId dynamically from request parameter or session
+    Integer orderId = (Integer) session.getAttribute("lastOrderId");
+    if (orderId == null) {
+        orderId = 0; // fallback if not available
+    }
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Success - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/succes.css">
+
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- SUCCESS CONTENT -->
+<section class="success-section">
+    <div class="success-box">
+        <div class="success-animation">
+            <div class="circle"></div>
+            <div class="checkmark">&#10004;</div>
+        </div>
+        <h1>Order Placed Successfully!</h1>
+        <p class="success-text">
+            Thank you for ordering from FoodHub.<br>
+            Your food is being prepared and will reach you soon.
+        </p>
+        <a href="trackorder.jsp?orderId=<%= orderId %>" class="track-btn">Track Your Order</a>
+        <a href="home.jsp" class="home-btn">Back to Home</a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>© 2025 FoodHub | All Rights Reserved | Made with ❤️ </p>
+    </div>
+</footer>
+
+</body>
+</html>

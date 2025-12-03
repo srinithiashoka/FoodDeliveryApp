@@ -1,0 +1,118 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        User user = (User) request.getSession().getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        int menuId = 0, quantity = 0;
+
+        if (menuIdStr != null) {
+            menuId = Integer.parseInt(menuIdStr);
+        }
+        if (quantityStr != null) {
+            quantity = Integer.parseInt(quantityStr);
+        }
+
+        if (action == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+            return;
+        }
+
+        switch (action.toLowerCase()) {
+            case "add":
+                handleAdd(user.getUserId(), menuId, quantity, response);
+                break;
+            case "remove":
+                handleRemove(user.getUserId(), menuId, response);
+                break;
+            case "clear":
+                handleClear(user.getUserId(), response);
+                break;
+            default:
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+
+    // ===== POST Handlers =====
+    private void handleAdd(int userId, int menuId, int quantity, HttpServletResponse response) throws IOException {
+        boolean success = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+        if (success) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Cart updated\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Failed to update cart\"}");
+        }
+    }
+
+    private void handleRemove(int userId, int menuId, HttpServletResponse response) throws IOException {
+        boolean exists = cartDAO.itemExists(userId, menuId);
+        if (!exists) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Item not in cart\"}");
+            return;
+        }
+
+        boolean removed = cartDAO.removeFromCart(userId, menuId);
+        if (removed) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Item removed from cart\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Failed to remove item\"}");
+        }
+    }
+
+    private void handleClear(int userId, HttpServletResponse response) throws IOException {
+        boolean cleared = cartDAO.clearCartByUserId(userId);
+        if (cleared) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Cart cleared\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Failed to clear cart\"}");
+        }
+    }
+
+    // ===== GET for viewCount =====
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        User user = (User) request.getSession().getAttribute("user");
+
+        String action = request.getParameter("action");
+
+        if (action != null && action.equalsIgnoreCase("viewCount")) {
+            if (user != null) {
+                int count = cartDAO.getCartItemCount(user.getUserId());
+                response.getWriter().write(String.valueOf(count));
+            } else {
+                response.getWriter().write("0");
+            }
+            return;
+        }
+
+        response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+    }
+}

@@ -1,0 +1,59 @@
+<%@ page import="java.util.*, com.foodapp.model.Menu, com.foodapp.model.User" %>
+<%@ page session="true" %>
+
+<%
+User user = (User) session.getAttribute("user");
+List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+%>
+
+<h1>Menu</h1>
+
+<c:if test="${empty menuList}">
+    <p>No items available.</p>
+</c:if>
+
+<div class="menu-container">
+<%
+if (menuList != null) {
+    for (Menu item : menuList) {
+%>
+    <div class="menu-item">
+        <img src="<%= (item.getFoodImage() != null && !item.getFoodImage().isEmpty()) ? item.getFoodImage() : "images/default-food.png" %>" alt="Food Image" width="150">
+        <h3><%= item.getItem() %></h3>
+        <p>Price: ₹<%= item.getPrice() %></p>
+
+        <% if (user != null) { %>
+        <form action="CartServlet" method="post">
+            <input type="hidden" name="menuId" value="<%= item.getMenuId() %>">
+            <label>Quantity:</label>
+            <input type="number" name="quantity" value="0" min="1">
+            <button type="submit">Add to Cart</button>
+        </form>
+        <% } else { %>
+            <p><a href="login.jsp">Login</a> to add to cart</p>
+        <% } %>
+    </div>
+<%
+    }
+}
+%>
+</div>
+
+<style>
+.menu-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.menu-item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    width: 200px;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px #ccc;
+}
+.menu-item img {
+    border-radius: 10px;
+}
+</style>

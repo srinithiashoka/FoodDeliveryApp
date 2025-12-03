@@ -1,0 +1,104 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        if (action == null || menuIdStr == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+            return;
+        }
+
+        int menuId = Integer.parseInt(menuIdStr);
+        int quantity = Integer.parseInt(quantityStr);
+
+        // Get menu details (to find restaurantId)
+        Menu menu = menuDAO.getMenuById(menuId);
+        int newRestaurantId = menu.getRestaurantId();
+
+        // Get current user cart restaurant
+        Integer currentCartRestaurant = cartDAO.getRestaurantIdInCart(userId);
+
+        // DIFFERENT RESTAURANT → CLEAR CART
+        if (currentCartRestaurant != null && currentCartRestaurant != newRestaurantId) {
+            cartDAO.clearCartByUserId(userId);
+        }
+
+        switch (action.toLowerCase()) {
+
+            case "add":
+                if (quantity == 0) {
+                    boolean removed = cartDAO.removeFromCart(userId, menuId);
+                    response.getWriter().write(
+                        removed ?
+                        "{\"status\":\"success\",\"message\":\"Item removed from cart\"}" :
+                        "{\"status\":\"error\",\"message\":\"Item not found in cart\"}"
+                    );
+                } else {
+                    boolean added = cartDAO.addOrUpdateCart(userId, menuId, quantity, newRestaurantId);
+                    response.getWriter().write(
+                        added ?
+                        "{\"status\":\"success\",\"message\":\"Added to cart\"}" :
+                        "{\"status\":\"error\",\"message\":\"Failed to update cart\"}"
+                    );
+                }
+                break;
+
+            case "remove":
+                boolean removed = cartDAO.removeFromCart(userId, menuId);
+                response.getWriter().write(
+                    removed ?
+                    "{\"status\":\"success\",\"message\":\"Item removed\"}" :
+                    "{\"status\":\"error\",\"message\":\"Item not found\"}"
+                );
+                break;
+
+            case "clear":
+                boolean cleared = cartDAO.clearCartByUserId(userId);
+                response.getWriter().write(
+                    cleared ?
+                    "{\"status\":\"success\",\"message\":\"Cart cleared\"}" :
+                    "{\"status\":\"error\",\"message\":\"Failed to clear cart\"}"
+                );
+                break;
+
+            default:
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+}

@@ -1,0 +1,273 @@
+/* =======================
+   RESET + BASE
+======================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #f8f8f8;
+    color: #222;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* =======================
+   HEADER (ZOMATO STYLE)
+======================= */
+header {
+    width: 100%;
+    background: #ff4757;
+    padding: 15px 0;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    /* 🔥 Fade-down animation */
+    animation: fadeDown 0.6s ease-out;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* LOGO */
+.logo img {
+    height: 45px;
+}
+
+/* NAV MENU */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.nav-menu li a {
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.nav-menu li a:hover {
+    opacity: 0.7;
+}
+
+/* RIGHT SIDE BUTTONS */
+.nav-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* SQUARE BUTTONS */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    background: #fff;
+    color: #ff4757;
+    font-weight: 600;
+    border-radius: 4px; /* Square */
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    background: #ffe3e3;
+}
+
+/* =======================
+   HERO SECTION
+======================= */
+.hero {
+    background: #ffccd0 url('https://via.placeholder.com/1600x400?text=Food+Delivery') center/cover no-repeat;
+    padding: 100px 20px 60px;
+    text-align: center;
+    position: relative;
+}
+
+.hero h1 {
+    font-size: 44px;
+    font-weight: 700;
+    color: white;
+}
+
+.hero p {
+    font-size: 18px;
+    margin-top: 10px;
+    color: #fff;
+}
+
+/* =======================
+   SEARCH BOX (ZOMATO STYLE)
+======================= */
+.search-box {
+    margin: 25px auto;
+    padding: 18px;
+    max-width: 700px;
+    background: white;
+    border-radius: 6px; /* Square */
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.search-box input {
+    width: 230px;
+    padding: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px; /* Square */
+    font-size: 15px;
+}
+
+.search-box button {
+    padding: 14px 20px;
+    background: #ff4757;
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px; /* Square */
+    cursor: pointer;
+}
+
+.search-box button:hover {
+    background: #e43d4d;
+}
+
+/* =======================
+   CATEGORIES (SQUARE)
+======================= */
+.categories {
+    padding: 60px 0;
+}
+
+.categories h2 {
+    text-align: center;
+    font-size: 28px;
+    color: #ff4757;
+    margin-bottom: 35px;
+}
+
+.category-grid {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.category-card {
+    width: 150px;
+    background: white;
+    border-radius: 6px; /* Square */
+    overflow: hidden;
+    text-align: center;
+    padding-bottom: 10px;
+    cursor: pointer;
+    border: 1px solid #eee;
+}
+
+.category-card img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+}
+
+.category-card p {
+    margin-top: 10px;
+    font-weight: 600;
+}
+
+/* =======================
+   RESTAURANTS
+======================= */
+.restaurants {
+    padding: 60px 0;
+}
+
+.restaurants h2 {
+    text-align: center;
+    font-size: 28px;
+    color: #ff4757;
+    margin-bottom: 35px;
+}
+
+.restaurant-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 22px;
+}
+
+.restaurant-card {
+    width: 260px;
+    background: white;
+    border-radius: 6px; /* Square */
+    border: 1px solid #eee;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.restaurant-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.restaurant-info {
+    padding: 15px;
+}
+
+.restaurant-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.restaurant-info p {
+    font-size: 14px;
+    margin-top: 3px;
+    color: #666;
+}
+
+/* =======================
+   FOOTER
+======================= */
+footer {
+    background: #1e1e1e;
+    padding: 25px;
+    color: #ccc;
+    text-align: center;
+    margin-top: 40px;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media(max-width: 768px) {
+    .nav-menu { display: none; }
+    .search-box { flex-direction: column; }
+    .category-card, .restaurant-card { width: 45%; }
+}
+
+@media(max-width: 480px) {
+    .category-card, .restaurant-card { width: 90%; }
+    .hero h1 { font-size: 28px; }
+}

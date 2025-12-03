@@ -1,0 +1,90 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants;
+
+    if ((location != null && !location.isEmpty()) || (restaurantName != null && !restaurantName.isEmpty())) {
+        restaurants = dao.searchRestaurants(location, restaurantName);
+    } else {
+        restaurants = dao.getActiveRestaurants();
+    }
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+<jsp:include page="header.jsp" />
+
+<section class="hero">
+    <div class="container">
+        <div class="hero-text-box">
+            <h1>Order food from your favourite restaurants near you</h1>
+            <p>Get your food delivered fast</p>
+        </div>
+
+        <div class="search-box">
+            <form action="home.jsp" method="get" class="search-form">
+                <div class="input-wrapper">
+                    <i class="fa fa-map-marker-alt"></i>
+                    <input type="text" name="location" placeholder="Enter your location">
+                </div>
+
+                <div class="input-wrapper">
+                    <i class="fa fa-search"></i>
+                    <input type="text" name="restaurant" placeholder="Search restaurants">
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="fa fa-search"></i> Find Food
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+
+<section class="restaurants">
+    <div class="container">
+        <h2>Top Restaurants Near You</h2>
+
+        <div class="restaurant-grid">
+            <% for (Restaurant r : restaurants) { %>
+
+            <a href="menu?action=byRestaurant&restaurantId=<%= r.getRestaurantId() %>" class="restaurant-card-link">
+                <div class="restaurant-card">
+
+                    <img src="<%= (r.getImagePath() != null) ? r.getImagePath() : "images/restaurants/default.jpg" %>"
+                     onerror="this.src='images/restaurants/default.jpg'">
+
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+                        <span><%= r.getCuisineType() %></span>
+                        <span><%= r.getDeliveryTime() %></span>
+                    </div>
+
+                </div>
+            </a>
+
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<jsp:include page="footer.jsp" />
+
+</body>
+</html>

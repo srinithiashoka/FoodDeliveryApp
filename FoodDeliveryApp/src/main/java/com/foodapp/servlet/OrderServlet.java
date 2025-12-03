@@ -1,0 +1,92 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.*;
+import com.foodapp.dao.impl.*;
+import com.foodapp.model.*;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/placeOrder")
+public class OrderServlet extends HttpServlet {
+
+    private OrderDAO orderDAO = new OrderDAOImpl();
+    private OrderItemDAO orderItemDAO = new OrderItemDAOImpl();
+    private CartDAO cartDAO = new CartDAOImpl();
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        // If user not logged in
+        if (user == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        int userId = user.getUserId();
+
+        // Payment method (default = Cash)
+        String paymentMode = request.getParameter("payment");
+        if (paymentMode == null || paymentMode.trim().equals("")) {
+            paymentMode = "Cash";
+        }
+
+        // Get user cart
+        List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+        if (cartItems == null || cartItems.isEmpty()) {
+            response.sendRedirect("cart.jsp?empty=true");
+            return;
+        }
+
+        // Get restaurant id (all items from same restaurant)
+        int restaurantId = cartItems.get(0).getRestaurantId();
+
+        // Calculate total
+        double total = 0;
+        for (CartItem item : cartItems) {
+            total += item.getQuantity() * item.getPrice();
+        }
+
+        // Create order object
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setRestaurantId(restaurantId);
+        order.setTotalAmount(total);
+        order.setStatus("Placed");
+        order.setPaymentMode(paymentMode);
+
+        // Save order and get orderId
+        int orderId = orderDAO.addOrderReturnId(order);
+
+        if (orderId <= 0) {
+            response.sendRedirect("cart.jsp?error=orderFailed");
+            return;
+        }
+
+        // Insert order items
+        for (CartItem ci : cartItems) {
+            OrderItem oi = new OrderItem();
+            oi.setOrderId(orderId);
+            oi.setMenuId(ci.getMenuId());
+            oi.setQuantity(ci.getQuantity());
+            oi.setTotalPrice(ci.getQuantity() * ci.getPrice());
+
+            orderItemDAO.addOrderItem(oi);
+        }
+
+        // Clear cart after placing the order
+        cartDAO.clearCartByUserId(userId);
+
+        // Redirect to success page
+        response.sendRedirect("success.jsp?orderId=" + orderId);
+    }
+}

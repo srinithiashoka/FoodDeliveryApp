@@ -1,0 +1,127 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.model.CartItem;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CartDAOImpl implements CartDAO {
+
+
+private Connection getConnection() throws SQLException {
+    // Replace with your DB connection details
+    return DriverManager.getConnection("jdbc:mysql://localhost:3306/foodapp", "root", "password");
+}
+
+@Override
+public boolean addOrUpdateCart(int userId, int menuId, int quantity) {
+    String checkSql = "SELECT quantity FROM cart WHERE user_id = ? AND menu_id = ?";
+    String insertSql = "INSERT INTO cart(user_id, menu_id, quantity) VALUES (?, ?, ?)";
+    String updateSql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND menu_id = ?";
+
+    try (Connection conn = getConnection()) {
+        // Check if item already exists
+        try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+            psCheck.setInt(1, userId);
+            psCheck.setInt(2, menuId);
+            ResultSet rs = psCheck.executeQuery();
+            if (rs.next()) {
+                // Exists → update quantity
+                try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
+                    psUpdate.setInt(1, quantity);
+                    psUpdate.setInt(2, userId);
+                    psUpdate.setInt(3, menuId);
+                    int rows = psUpdate.executeUpdate();
+                    System.out.println("DEBUG: Cart updated, rows affected = " + rows);
+                    return rows > 0;
+                }
+            } else {
+                // Not exists → insert new
+                try (PreparedStatement psInsert = conn.prepareStatement(insertSql)) {
+                    psInsert.setInt(1, userId);
+                    psInsert.setInt(2, menuId);
+                    psInsert.setInt(3, quantity);
+                    int rows = psInsert.executeUpdate();
+                    System.out.println("DEBUG: Cart inserted, rows affected = " + rows);
+                    return rows > 0;
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.out.println("DEBUG: Cart addOrUpdateCart failed -> " + e.getMessage());
+        return false;
+    }
+}
+
+@Override
+public boolean removeFromCart(int userId, int menuId) {
+    String sql = "DELETE FROM cart WHERE user_id = ? AND menu_id = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        ps.setInt(2, menuId);
+        int rows = ps.executeUpdate();
+        System.out.println("DEBUG: removeFromCart rows affected = " + rows);
+        return rows > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
+
+@Override
+public boolean clearCartByUserId(int userId) {
+    String sql = "DELETE FROM cart WHERE user_id = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        int rows = ps.executeUpdate();
+        System.out.println("DEBUG: clearCartByUserId rows affected = " + rows);
+        return rows > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
+
+@Override
+public int getCartItemCount(int userId) {
+    String sql = "SELECT SUM(quantity) AS total FROM cart WHERE user_id = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            return rs.getInt("total");
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return 0;
+}
+
+@Override
+public List<CartItem> getCartByUser(int userId) {
+    List<CartItem> cartList = new ArrayList<>();
+    String sql = "SELECT menu_id, quantity FROM cart WHERE user_id = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            CartItem item = new CartItem();
+            item.setMenuId(rs.getInt("menu_id"));
+            item.setQuantity(rs.getInt("quantity"));
+            cartList.add(item);
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return cartList;
+}
+
+
+}

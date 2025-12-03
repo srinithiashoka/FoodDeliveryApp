@@ -1,0 +1,152 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+    String error = request.getParameter("error");
+    String msg = request.getParameter("msg");
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login - FoodHub</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/home.css">
+
+    <style>
+        /* ===== AUTH CARD ===== */
+        .auth-container {
+            max-width: 320px;          /* smaller width */
+            margin: 60px auto;         /* vertical spacing */
+            padding: 20px 25px;        /* compact padding */
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .auth-container h2 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #ff4757;
+            text-align: center;
+        }
+
+        .auth-container input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+        }
+
+        .auth-container button {
+            width: 100%;
+            padding: 8px;
+            background: #ff4757;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+        }
+
+        .auth-container button:hover {
+            background: #e84150;
+        }
+
+        .auth-message {
+            color: red;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .auth-success {
+            color: green;
+        }
+
+        .auth-container p {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .auth-container a {
+            color: #ff4757;
+            text-decoration: none;
+        }
+
+        .auth-container a:hover {
+            text-decoration: underline;
+        }
+
+        @media(max-width: 480px) {
+            .auth-container {
+                margin: 40px 15px;
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn btn-login">Login</button>
+                <button class="btn btn-signup">Sign Up</button>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart?action=view">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png" alt="Cart" title="My Cart">
+                    </a>
+                    <span class="cart-badge"><%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- LOGIN CARD -->
+<div class="container auth-container">
+    <h2>Login to FoodHub</h2>
+    <% if(error != null){ %>
+        <p class="auth-message"><%= error %></p>
+    <% } %>
+    <% if(msg != null){ %>
+        <p class="auth-message auth-success"><%= msg %></p>
+    <% } %>
+
+    <form action="user" method="post">
+        <input type="hidden" name="action" value="login">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <p>Don't have an account? <a href="signup.jsp">Sign Up</a></p>
+</div>
+
+<!-- FOOTER -->
+<footer style="text-align:center; padding:15px 0; background:#f7f7f7; margin-top:40px;">
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+</body>
+</html>

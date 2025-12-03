@@ -1,0 +1,61 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.foodapp.model.User" %>
+<%
+User user = (User) session.getAttribute("user");
+if (user == null) {
+    response.sendRedirect("login.jsp?error=Please login first");
+    return;
+}
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cart Test - FoodHub</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input { margin: 5px; }
+        button { margin: 5px; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h2>Cart Test Page</h2>
+    <p>Logged in as: <b><%= user.getUsername() %></b> (UserId: <%= user.getUserId() %>)</p>
+
+    <form action="cart" method="post">
+        <input type="hidden" name="action" value="add">
+        Menu ID: <input type="number" name="menuId" required>
+        Quantity: <input type="number" name="quantity" required>
+        <button type="submit">Add / Update Cart</button>
+    </form>
+
+    <form action="cart" method="post">
+        <input type="hidden" name="action" value="delete">
+        Menu ID: <input type="number" name="menuId" required>
+        <button type="submit">Remove from Cart</button>
+    </form>
+
+    <form action="cart" method="post">
+        <input type="hidden" name="action" value="clear">
+        <button type="submit">Clear Cart</button>
+    </form>
+
+    <form action="cart" method="post">
+        <input type="hidden" name="action" value="viewCount">
+        <button type="submit">View Total Items in Cart</button>
+    </form>
+
+    <div class="result">
+        <h3>Instructions:</h3>
+        <ul>
+            <li>Use "Add / Update" to insert or change quantity of an item.</li>
+            <li>Use "Remove" to delete an item by Menu ID.</li>
+            <li>Use "Clear" to empty the cart.</li>
+            <li>Use "View Total Items" to see the total quantity of all items.</li>
+        </ul>
+    </div>
+
+</body>
+</html>

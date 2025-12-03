@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Order Success - FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+
+/* GLOBAL */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    background:#ffe6ef;
+    font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* HEADER */
+header{
+    background:#ff4757;
+    padding:18px 0;
+    color:#fff;
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+.container{
+    width:90%;
+    max-width:1200px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+.logo{
+    font-size:26px;
+    font-weight:700;
+}
+.nav a{
+    margin-left:25px;
+    font-size:17px;
+    color:white;
+    text-decoration:none;
+    padding:6px 12px;
+}
+.nav a:hover{
+    background:white;
+    color:#ff4757;
+    border-radius:6px;
+}
+
+/* SUCCESS BOX */
+.success-container {
+    width: 420px;
+    margin: 80px auto;
+    background: white;
+    padding: 35px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    animation: pop 0.6s ease;
+}
+
+/* Success tick */
+.success-icon {
+    font-size: 85px;
+    color: #28a745;
+    animation: tickBounce 1.4s infinite;
+}
+
+/* Heading */
+.success-container h2 {
+    color:#ff4757;
+    font-size: 32px;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+/* Sub text */
+.success-container p {
+    color:#444;
+    font-size: 17px;
+    margin-top: 8px;
+}
+
+/* Delivery animation */
+.delivery-animation {
+    margin: 30px 0 10px;
+    overflow:hidden;
+}
+.delivery-boy {
+    font-size: 45px;
+    animation: moveBoy 3s linear infinite;
+}
+
+/* Track btn */
+.track-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 14px 28px;
+    background:#ff4757;
+    color:white;
+    font-size:17px;
+    border-radius:10px;
+    font-weight: bold;
+    transition:0.3s;
+}
+.track-btn:hover {
+    background:#e03c4c;
+    transform:scale(1.05);
+}
+
+/* FOOTER */
+footer{
+    background:#222;
+    color:#ccc;
+    text-align:center;
+    padding:18px 0;
+    margin-top:60px;
+    font-size:14px;
+}
+footer a{
+    color:#ff4757;
+    text-decoration:none;
+}
+footer a:hover{
+    text-decoration:underline;
+}
+
+/* ANIMATIONS */
+@keyframes pop {
+    from { transform: scale(0.7); opacity:0; }
+    to { transform: scale(1); opacity:1; }
+}
+@keyframes tickBounce {
+    0% {transform:scale(1);}
+    50% {transform:scale(1.12);}
+    100% {transform:scale(1);}
+}
+@keyframes moveBoy {
+    0% {transform:translateX(-120%);}
+    100% {transform:translateX(120%);}
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="logo">FoodHub</div>
+        <div class="nav">
+            <a href="home.jsp">Home</a>
+            <a href="restaurants.jsp">Restaurants</a>
+            <a href="cart.jsp">Cart</a>
+            <a href="logout">Logout</a>
+        </div>
+    </div>
+</header>
+
+
+<!-- SUCCESS BOX -->
+<div class="success-container">
+    <div class="success-icon">
+        <i class="fa-solid fa-circle-check"></i>
+    </div>
+
+    <h2>Order Placed Successfully!</h2>
+    <p>Your delicious food is on the way. Get ready to enjoy!</p>
+
+    <div class="delivery-animation">
+        <div class="delivery-boy">🚴‍♂️💨</div>
+    </div>
+
+    <a href="trackOrder.jsp" class="track-btn">Track Your Order</a>
+</div>
+
+
+<!-- FOOTER -->
+<footer>
+    © 2025 FoodHub • Crafted with ❤️  
+    <br>
+    <a href="contact.jsp">Contact Support</a>
+</footer>
+
+</body>
+</html>

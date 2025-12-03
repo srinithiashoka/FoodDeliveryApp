@@ -1,0 +1,164 @@
+package com.foodapp.dao.impl;
+
+import com.foodapp.dao.RestaurantDAO;
+import com.foodapp.model.Restaurant;
+import com.foodapp.util.DBConnection;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class RestaurantDAOImpl implements RestaurantDAO {
+
+    @Override
+    public boolean addRestaurant(Restaurant r) {
+        String sql = "INSERT INTO restaurants (name, cuisineType, deliveryTime, address, adminUserId, isActive, imagePath) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, r.getName());
+            ps.setString(2, r.getCuisineType());
+            ps.setString(3, r.getDeliveryTime());
+            ps.setString(4, r.getAddress());
+            ps.setInt(5, r.getAdminUserId());
+            ps.setBoolean(6, r.isActive());
+            ps.setString(7, r.getImagePath());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateRestaurant(Restaurant r) {
+        String sql = "UPDATE restaurants SET name=?, cuisineType=?, deliveryTime=?, address=?, adminUserId=?, isActive=?, imagePath=? WHERE restaurantId=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, r.getName());
+            ps.setString(2, r.getCuisineType());
+            ps.setString(3, r.getDeliveryTime());
+            ps.setString(4, r.getAddress());
+            ps.setInt(5, r.getAdminUserId());
+            ps.setBoolean(6, r.isActive());
+            ps.setString(7, r.getImagePath());
+            ps.setInt(8, r.getRestaurantId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deleteRestaurant(int restaurantId) {
+        String sql = "DELETE FROM restaurants WHERE restaurantId=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, restaurantId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public Restaurant getRestaurantById(int restaurantId) {
+        String sql = "SELECT * FROM restaurants WHERE restaurantId=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, restaurantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return extractRestaurant(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public List<Restaurant> getAllRestaurants() {
+        List<Restaurant> list = new ArrayList<>();
+        String sql = "SELECT * FROM restaurants";
+        try (Connection conn = DBConnection.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                list.add(extractRestaurant(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    @Override
+    public List<Restaurant> getActiveRestaurants() {
+        List<Restaurant> list = new ArrayList<>();
+        String sql = "SELECT * FROM restaurants WHERE isActive = TRUE";
+        try (Connection conn = DBConnection.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                list.add(extractRestaurant(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    private Restaurant extractRestaurant(ResultSet rs) throws SQLException {
+        Restaurant r = new Restaurant();
+        r.setRestaurantId(rs.getInt("restaurantId"));
+        r.setName(rs.getString("name"));
+        r.setCuisineType(rs.getString("cuisineType"));
+        r.setDeliveryTime(rs.getString("deliveryTime"));
+        r.setAddress(rs.getString("address"));
+        r.setAdminUserId(rs.getInt("adminUserId"));
+        r.setActive(rs.getBoolean("isActive"));
+        r.setImagePath(rs.getString("imagePath"));
+        return r;
+    }
+
+    @Override
+    public List<Restaurant> searchRestaurants(String location, String name) {
+        List<Restaurant> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM restaurants WHERE isActive = TRUE");
+
+        // Append filters based on input
+        if (location != null && !location.isEmpty()) {
+            sql.append(" AND address LIKE ?");
+        }
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND name LIKE ?");
+        }
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int index = 1;
+            if (location != null && !location.isEmpty()) {
+                ps.setString(index++, "%" + location + "%");
+            }
+            if (name != null && !name.isEmpty()) {
+                ps.setString(index++, "%" + name + "%");
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractRestaurant(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+}

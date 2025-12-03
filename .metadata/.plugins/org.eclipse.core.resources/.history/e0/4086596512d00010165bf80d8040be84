@@ -1,0 +1,108 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.model.User"%>
+
+<%
+    @SuppressWarnings("unchecked")
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - FoodHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+
+<header>
+    <div class="container navbar">
+        <div class="logo"><i class="fa-solid fa-motorcycle"></i> FoodHub</div>
+        <div class="nav-actions">
+            <% if(user == null) { %>
+                <button onclick="location.href='login.jsp'">Login</button>
+                <button onclick="location.href='signup.jsp'">Sign Up</button>
+            <% } else { %>
+                <span>Welcome, <%= user.getUsername() %></span>
+            <% } %>
+            <div class="cart-icon-wrapper">
+                <a href="cart.jsp"><img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png"></a>
+                <span class="cart-badge">0</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container menu-container">
+    <h1>Menu</h1>
+
+    <% if(menuList != null && !menuList.isEmpty()) { 
+           for(Menu m : menuList) { %>
+    <div class="menu-item-wrapper">
+        <h3><%= m.getItemName() %> - ₹<%= m.getPrice() %></h3>
+        <div>
+            <button class="decrease">-</button>
+            <input type="text" value="0" class="quantity-display" readonly>
+            <button class="increase">+</button>
+            <button class="add-to-cart">Add</button>
+            <input type="hidden" class="menu-id" value="<%= m.getMenuId() %>">
+        </div>
+    </div>
+    <% } } else { %>
+    <p>No menu items available.</p>
+    <% } %>
+</div>
+
+<script>
+const isLoggedIn = <%= (userId != null) ? "true" : "false" %>;
+
+function showToast(msg) { alert(msg); }
+
+function getMenuId(item) {
+    const input = item.querySelector(".menu-id");
+    return input ? parseInt(input.value) : 0;
+}
+
+function addToCart(menuId, qty, action) {
+    if(!isLoggedIn) { window.location.href='login.jsp'; return; }
+    fetch('<%=request.getContextPath()%>/cart', {
+        method:'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: `action=${action}&menuId=${menuId}&quantity=${qty}`
+    }).then(r => r.json())
+      .then(data => {
+          showToast(data.message);
+          updateCartBadge();
+      });
+}
+
+function updateCartBadge() {
+    fetch("<%=request.getContextPath()%>/cart?action=viewcount")
+        .then(res=>res.json())
+        .then(data=>{
+            document.querySelector(".cart-badge").textContent = data.count || 0;
+        });
+}
+
+document.querySelectorAll(".menu-item-wrapper").forEach(item=>{
+    const decrease = item.querySelector(".decrease");
+    const increase = item.querySelector(".increase");
+    const display = item.querySelector(".quantity-display");
+    const addBtn = item.querySelector(".add-to-cart");
+    const menuId = getMenuId(item);
+
+    decrease.onclick = ()=>{ let val=parseInt(display.value); if(val>0) display.value=val-1; };
+    increase.onclick = ()=>{ display.value=parseInt(display.value)+1; };
+    addBtn.onclick = ()=>{ addToCart(menuId, parseInt(display.value), parseInt(display.value)>0?"add":"remove"); };
+});
+
+window.onload = updateCartBadge;
+</script>
+
+</body>
+</html>

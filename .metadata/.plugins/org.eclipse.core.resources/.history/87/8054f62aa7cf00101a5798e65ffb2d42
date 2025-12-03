@@ -1,0 +1,89 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.CartItem;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/plain; charset=UTF-8");
+        HttpSession session = request.getSession(false);
+
+        if (session == null) {
+            response.getWriter().write("fail: user not logged in");
+            System.out.println("CartServlet: No session found.");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            response.getWriter().write("fail: user not logged in");
+            System.out.println("CartServlet: User session is null");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+        int menuId = request.getParameter("menuId") != null ? Integer.parseInt(request.getParameter("menuId")) : 0;
+        int quantity = request.getParameter("quantity") != null ? Integer.parseInt(request.getParameter("quantity")) : 0;
+
+        System.out.println("CartServlet: Action=" + action + ", userId=" + userId +
+                ", menuId=" + menuId + ", quantity=" + quantity);
+
+        String message = "fail: unknown error";
+
+        try {
+            switch (action) {
+                case "add":
+                    if (menuId <= 0 || quantity <= 0) {
+                        message = "fail: invalid menuId or quantity";
+                    } else if (cartDAO.addOrUpdateCart(userId, menuId, quantity)) {
+                        message = "success: item added/updated";
+                    } else {
+                        message = "fail: DB insert/update failed";
+                    }
+                    break;
+
+                case "delete":
+                    if (menuId <= 0) {
+                        message = "fail: invalid menuId";
+                    } else if (cartDAO.removeFromCart(userId, menuId)) {
+                        message = "success: item removed";
+                    } else {
+                        message = "fail: item not in cart or DB error";
+                    }
+                    break;
+
+                case "clear":
+                    if (cartDAO.clearCartByUserId(userId)) {
+                        message = "success: cart cleared";
+                    } else {
+                        message = "fail: cart empty or DB error";
+                    }
+                    break;
+
+                case "viewCount":
+                    int count = cartDAO.getCartItemCount(userId);
+                    response.getWriter().write(String.valueOf(count));
+                    return;
+
+                case "viewData":
+                    List<CartItem> cartList = cartDAO.getCartByUser(userId);
+                    double grandTotal = 0;
+                    int itemQty = 0;
+                    double itemTotal

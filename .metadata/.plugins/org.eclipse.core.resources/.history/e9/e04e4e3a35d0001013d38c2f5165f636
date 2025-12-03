@@ -1,0 +1,149 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+    double subtotal = 0;
+    for(CartItem item : cartItems){
+        subtotal += item.getPrice() * item.getQuantity();
+    }
+    double tax = subtotal * 0.05;
+    double discount = subtotal * 0.1;
+    double grandTotal = subtotal + tax - discount;
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodHub - Your Cart</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/cart.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="home.jsp">Restaurants</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if(user == null){ %>
+                    <button onclick="location.href='login.jsp'" class="btn btn-login">Login</button>
+                    <button onclick="location.href='signup.jsp'" class="btn btn-signup">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                    </a>
+                    <% if(cartItems.size() > 0) { %>
+                        <span class="cart-badge"><%= cartItems.size() %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- CART -->
+<div class="cart-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+    <h2>Your Cart</h2>
+
+    <% if(cartItems.isEmpty()){ %>
+        <p class="empty-cart">Your cart is empty.</p>
+    <% } else {
+        for(CartItem item : cartItems){ %>
+            <div class="cart-item">
+                <div class="cart-image">
+                    <img src="<%= (item.getFoodImage()!=null && !item.getFoodImage().isEmpty()) ? item.getFoodImage() : "images/default-food.jpg" %>" alt="<%= item.getFoodName() %>">
+                </div>
+                <div class="cart-content">
+                    <div class="cart-header">
+                        <h3><%= item.getFoodName() %></h3>
+                        <div class="cart-price" data-price="<%= item.getPrice() %>">₹<%= item.getPrice() %></div>
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="qty-btn decrease">-</button>
+                        <input type="text" class="quantity-input" value="<%= item.getQuantity() %>" readonly>
+                        <button class="qty-btn increase">+</button>
+                        <button class="btn-remove">Remove</button>
+                    </div>
+                </div>
+            </div>
+    <% }} %>
+
+    <!-- SUMMARY -->
+    <div class="cart-summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">Subtotal <span id="subtotal">₹<%= String.format("%.2f", subtotal) %></span></div>
+        <div class="summary-row">Tax (5%) <span id="tax">₹<%= String.format("%.2f", tax) %></span></div>
+        <div class="summary-row">Discount (10%) <span id="discount">-₹<%= String.format("%.2f", discount) %></span></div>
+        <div class="summary-row grand-total">Grand Total <span id="grandTotal">₹<%= String.format("%.2f", grandTotal) %></span></div>
+        <button class="checkout-btn">Proceed to Payment</button>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+// Update totals dynamically
+function updateTotals() {
+    let subtotal = 0;
+    document.querySelectorAll('.cart-item').forEach(item => {
+        const qty = parseInt(item.querySelector('.quantity-input').value);
+        const price = parseFloat(item.querySelector('.cart-price').dataset.price);
+        subtotal += qty * price;
+    });
+    const tax = subtotal * 0.05;
+    const discount = subtotal * 0.1;
+    const grandTotal = subtotal + tax - discount;
+
+    document.getElementById('subtotal').textContent = '₹' + subtotal.toFixed(2);
+    document.getElementById('tax').textContent = '₹' + tax.toFixed(2);
+    document.getElementById('discount').textContent = '-₹' + discount.toFixed(2);
+    document.getElementById('grandTotal').textContent = '₹' + grandTotal.toFixed(2);
+}
+
+// Quantity & Remove buttons
+document.querySelectorAll('.cart-item').forEach(item => {
+    const qtyInput = item.querySelector('.quantity-input');
+    item.querySelector('.increase').addEventListener('click', () => {
+        qtyInput.value = parseInt(qtyInput.value) + 1;
+        updateTotals();
+    });
+    item.querySelector('.decrease').addEventListener('click', () => {
+        if(parseInt(qtyInput.value) > 1){
+            qtyInput.value = parseInt(qtyInput.value) - 1;
+            updateTotals();
+        }
+    });
+    item.querySelector('.btn-remove').addEventListener('click', () => {
+        item.remove();
+        updateTotals();
+    });
+});
+</script>
+
+</body>
+</html>

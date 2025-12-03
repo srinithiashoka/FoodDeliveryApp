@@ -1,0 +1,55 @@
+package com.foodapp.util;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DBConnection {
+
+    private static Connection conn = null;
+
+    public static Connection getConnection() {
+        if (conn == null) {
+            try {
+                // Load MySQL JDBC Driver
+                Class.forName("com.mysql.cj.jdbc.Driver");
+
+                // Connect to database
+                conn = DriverManager.getConnection(
+                        "jdbc:mysql://localhost:3306/food_delivery?useSSL=false&serverTimezone=UTC",
+                        "root",   // change if your MySQL username is different
+                        "root"    // change if your MySQL password is different
+                );
+                System.out.println("Database connected successfully!");
+
+            } catch (ClassNotFoundException e) {
+                System.err.println("MySQL JDBC Driver not found!");
+                e.printStackTrace();
+            } catch (SQLException e) {
+                System.err.println("Failed to connect to database!");
+                e.printStackTrace();
+            }
+        }
+        return conn;
+    }
+
+    // Optional: close connection
+    public static void closeConnection() {
+        if (conn != null) {
+            try {
+                conn.close();
+                conn = null;
+                System.out.println("Database connection closed.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Test connection
+    public static void main(String[] args) {
+        Connection test = DBConnection.getConnection();
+        if (test != null) System.out.println("Connection works!");
+        else System.out.println("Connection failed!");
+    }
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Order Success - FoodDelivery</title>
+<link rel="stylesheet" href="success.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="success-header">
+    <div class="success-container">
+        <div class="success-logo">FoodDelivery</div>
+
+        <nav class="nav-links">
+            <a href="index.jsp">Home</a>
+            <a href="restaurants.jsp">Restaurants</a>
+            <a href="cart.jsp">Cart</a>
+        </nav>
+    </div>
+</header>
+
+
+<!-- SUCCESS SECTION -->
+<section class="success-section">
+    <div class="success-box">
+
+        <div class="success-animation">
+            <div class="circle"></div>
+            <div class="checkmark">&#10004;</div>
+        </div>
+
+        <h1>Your Order is Placed Successfully!</h1>
+        <p class="success-text">
+            Thank you for ordering from FoodDelivery.  
+            Your food is being prepared and will reach you soon!
+        </p>
+
+        <div class="order-summary">
+            <p><strong>Order ID:</strong> #FD10293</p>
+            <p><strong>Estimated Delivery:</strong> 25–35 mins</p>
+            <p><strong>Payment:</strong> Paid</p>
+        </div>
+
+        <a href="trackorder.jsp" class="track-btn">Track Your Order</a>
+    </div>
+</section>
+
+
+<!-- FOOTER -->
+<footer class="success-footer">
+    <p>© 2025 FoodDelivery. All Rights Reserved.</p>
+    <p><a href="#">Help & Support</a> | <a href="#">Contact Us</a></p>
+</footer>
+
+</body>
+</html>

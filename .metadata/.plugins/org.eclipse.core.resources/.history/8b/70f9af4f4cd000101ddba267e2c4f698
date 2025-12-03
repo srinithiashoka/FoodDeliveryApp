@@ -1,0 +1,90 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.OrderDAOImpl;
+import com.foodapp.dao.impl.OrderItemDAOImpl;
+import com.foodapp.model.CartItem;
+import com.foodapp.model.Order;
+import com.foodapp.model.OrderItem;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/placeOrder")
+public class PlaceOrderServlet extends HttpServlet {
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        int userId = user.getUserId();
+        String paymentMode = request.getParameter("paymentMode");
+
+        CartDAOImpl cartDAO = new CartDAOImpl();
+        OrderDAOImpl orderDAO = new OrderDAOImpl();
+        OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+
+        List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+        if (cartItems.isEmpty()) {
+            response.sendRedirect("cart.jsp");
+            return;
+        }
+
+        double total = 0;
+        int restaurantId = cartItems.get(0).getRestaurantId(); 
+
+        for (CartItem item : cartItems) {
+            total += item.getPrice() * item.getQuantity();
+        }
+
+        // Create Order
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setRestaurantId(restaurantId);
+        order.setTotalAmount(total);
+        order.setStatus("PLACED");
+        order.setPaymentMode(paymentMode);
+
+        boolean created = orderDAO.addOrder(order);
+
+        if (!created) {
+            response.sendRedirect("cart.jsp");
+            return;
+        }
+
+        int orderId = order.getOrderId();
+
+        // Add Order Items
+        for (CartItem c : cartItems) {
+            OrderItem item = new OrderItem();
+            item.setOrderId(orderId);
+            item.setMenuId(c.getMenuId());
+            item.setQuantity(c.getQuantity());
+            item.setTotalPrice(c.getPrice() * c.getQuantity());
+            orderItemDAO.addOrderItem(item);
+        }
+
+        // Clear cart
+        cartDAO.clearCart(userId);
+
+        // Redirect to success page
+        response.sendRedirect("orderSuccess.jsp?orderId=" + orderId);
+    }
+}

@@ -1,0 +1,13 @@
+package com.foodapp.dao;
+
+import java.util.List;
+import com.foodapp.model.Cart;
+
+public interface CartDAO {
+    boolean addToCart(Cart cart);
+    boolean updateCart(Cart cart);
+    boolean removeFromCart(int userId, int menuId);
+    int getCartCount(int userId);
+	boolean clearCart(int userId);
+	List<Cart> getCartByUser(int userId);
+}

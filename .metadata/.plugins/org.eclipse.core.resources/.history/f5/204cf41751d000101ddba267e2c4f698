@@ -1,0 +1,106 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.foodapp.model.User"%>
+<%@ page import="com.foodapp.model.OrderItem"%>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl"%>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="java.util.List"%>
+
+<%
+    // Get user session
+    User user = (User) session.getAttribute("user");
+    if(user == null){
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    // Get orderId parameter safely
+    String orderIdStr = request.getParameter("orderId");
+    int orderId = 0;
+    if(orderIdStr != null && !orderIdStr.isEmpty()){
+        orderId = Integer.parseInt(orderIdStr);
+    } else {
+        response.sendRedirect("home.jsp");
+        return;
+    }
+
+    // DAOs
+    OrderItemDAOImpl orderItemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    // Get order items
+    List<OrderItem> items = orderItemDAO.getItemsByOrder(orderId);
+
+    // Calculate total
+    double totalAmount = 0;
+    for(OrderItem item : items){
+        totalAmount += item.getTotalPrice();
+    }
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Success | FoodHub</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    body {font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; background:#f9f9f9; margin:0; display:flex; flex-direction:column; min-height:100vh;}
+    header {background:#ff4757; padding:12px 0; color:white; position:sticky; top:0; z-index:100; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    footer {background:#2f3542; color:white; text-align:center; padding:15px 0; margin-top:auto; font-size:0.85rem;}
+    .container {width:90%; max-width:800px; margin:auto; padding:20px;}
+    .success-card {background:white; padding:20px; border-radius:10px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    .success-card h2 {color:#2ed573; font-size:1.8rem; margin-bottom:10px;}
+    .success-card p {font-size:0.95rem; color:#555; margin-bottom:15px;}
+    .order-details {margin-top:20px; text-align:left;}
+    .order-details h3 {font-size:1.1rem; margin-bottom:10px; color:#ff4757;}
+    .order-item {display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.95rem;}
+    .grand-total {margin-top:15px; font-weight:bold; font-size:1rem; text-align:right;}
+    .btn-home {margin-top:20px; background:#ff4757; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold; text-decoration:none;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div><i class="fa-solid fa-motorcycle"></i> <strong>FoodHub</strong></div>
+            <div>Welcome, <%= user.getUsername() %></div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <div class="success-card">
+        <h2><i class="fa-solid fa-check-circle"></i> Order Placed Successfully!</h2>
+        <p>Thank you for your order. Your food is on the way. You can track it in your orders section.</p>
+
+        <div class="order-details">
+            <h3>Order #<%= orderId %> Details:</h3>
+            <% for(OrderItem item : items){ 
+                    Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+                    String name = (menu != null) ? menu.getItemName() : "Food Item";
+            %>
+                <div class="order-item">
+                    <span><%= name %> x <%= item.getQuantity() %></span>
+                    <span>₹<%= String.format("%.2f", item.getTotalPrice()) %></span>
+                </div>
+            <% } %>
+            <div class="grand-total">Total Amount: ₹<%= String.format("%.2f", totalAmount) %></div>
+        </div>
+
+        <a href="home.jsp" class="btn-home">Back to Home</a>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        © 2025 FoodHub | All Rights Reserved | Made with ❤️ in Coimbatore
+    </div>
+</footer>
+
+</body>
+</html>

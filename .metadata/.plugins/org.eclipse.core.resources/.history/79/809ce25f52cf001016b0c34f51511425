@@ -1,0 +1,162 @@
+/* CONTAINER */
+.menu-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding-bottom: 40px;
+}
+
+.menu-title {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 32px;
+    color: #ff4757;
+    font-weight: bold;
+}
+
+/* MENU ROW */
+.menu-row {
+    display: flex;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* IMAGE WHITE BOX */
+.menu-img-box {
+    width: 130px;
+    height: 130px;
+    background: #ffffff;
+    padding: 8px;
+    border-radius: 14px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-img-box img {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+/* CONTENT */
+.menu-details {
+    flex: 1;
+}
+
+.food-name {
+    color: #ff4757;
+    margin-bottom: 5px;
+    font-size: 20px;
+}
+
+.food-desc {
+    color: #666;
+    margin-bottom: 8px;
+}
+
+/* PRICE & ACTIONS */
+.price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.price {
+    font-size: 20px;
+    color: #2f3542;
+    font-weight: bold;
+}
+
+/* QTY BUTTONS */
+.qty-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.qty-input {
+    width: 40px;
+    text-align: center;
+    background: #f1f2f6;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.qty-btn {
+    padding: 5px 10px;
+    background: #dfe4ea;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.qty-btn:hover {
+    background: #ced6e0;
+}
+
+/* ADD BUTTON */
+.btn-add {
+    margin-left: 10px;
+    background: #2ed573;
+    padding: 6px 15px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-add:hover {
+    background: #26c35e;
+}
+
+/* BACK LINK */
+.back-link {
+    color: #1e90ff;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+/* TOAST */
+#toast {
+    visibility: hidden;
+    position: fixed;
+    left: 50%;
+    bottom: 40px;
+    transform: translateX(-50%);
+    background: #2ed573;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    z-index: 1000;
+}
+
+#toast.show {
+    visibility: visible;
+    animation: toastAnim 2s;
+}
+
+@keyframes toastAnim {
+    0% { opacity: 0; bottom: 20px; }
+    30% { opacity: 1; bottom: 40px; }
+    100% { opacity: 0; bottom: 20px; }
+}
+
+/* MOBILE */
+@media(max-width: 767px) {
+    .menu-row {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .price-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

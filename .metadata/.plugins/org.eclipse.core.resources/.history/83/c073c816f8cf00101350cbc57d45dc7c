@@ -1,0 +1,193 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.model.User"%>
+
+<%
+    @SuppressWarnings("unchecked")
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - FoodHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/menu.css">
+
+    <style>
+        .quantity-controls { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+        .quantity-input-display { width: 28px; height: 26px; text-align: center; padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; background: #f7f7f7; font-size: 0.75rem; }
+        .qty-btn { width: 26px; height: 26px; border: none; background: #ddd; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:hover { background: #bbb; }
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 10px; position: fixed; top: 20px; right: 20px; z-index: 1000; opacity: 0; transition: opacity 0.5s, visibility 0.5s; }
+        #toast.show { visibility: visible; opacity: 1; }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if(user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png" alt="Cart">
+                    </a>
+                    <span class="cart-badge">
+                        <%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container menu-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+    <h1 style="text-align:center; margin-bottom:30px; color:#ff4757;">Menu</h1>
+
+    <% if (menuList != null && !menuList.isEmpty()) {
+        for (Menu m : menuList) { %>
+
+    <div class="menu-item menu-item-wrapper">
+        <div class="menu-image">
+            <img src="<%= (m.getImagePath() != null && !m.getImagePath().isEmpty()) 
+                        ? m.getImagePath() 
+                        : "images/restaurants/" + m.getRestaurantId() + "/" + m.getMenuId() + ".jpg" %>" 
+                 alt="<%= m.getItemName() %>">
+        </div>
+
+        <div class="menu-content">
+            <div class="menu-header">
+                <h3><%= m.getItemName() %></h3>
+                <span class="menu-price">₹<%= m.getPrice() %></span>
+            </div>
+
+            <p class="menu-description"><%= m.getDescription() %></p>
+
+            <div class="quantity-controls">
+                <button type="button" class="qty-btn decrease">−</button>
+                <input type="text" value="1" class="quantity-input-display" readonly>
+                <button type="button" class="qty-btn increase">+</button>
+                <button type="button" class="qty-btn clear">Clear</button>
+                <button type="button" class="btn-add">Add to Cart</button>
+            </div>
+
+            <input type="hidden" class="menu-id" value="<%= m.getMenuId() %>">
+        </div>
+    </div>
+
+    <% }} else { %>
+        <p style="text-align:center; color:red; width:100%;">No menu items available.</p>
+    <% } %>
+</div>
+
+<div id="toast"></div>
+
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+    const isLoggedIn = <%= (userId != null) ? "true" : "false" %>;
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function updateCartBadge() {
+        fetch("<%=request.getContextPath()%>/cart?action=viewCount")
+            .then(res => res.text())
+            .then(count => {
+                document.querySelector(".cart-badge").textContent = count;
+            });
+    }
+
+    document.querySelectorAll(".menu-item-wrapper").forEach(item => {
+
+        const decrease = item.querySelector(".decrease");
+        const increase = item.querySelector(".increase");
+        const clearBtn = item.querySelector(".clear");
+        const addBtn = item.querySelector(".btn-add");
+        const input = item.querySelector(".quantity-input-display");
+        const menuId = item.querySelector(".menu-id").value;
+
+        decrease.onclick = () => {
+            let val = parseInt(input.value);
+            if (val > 1) input.value = val - 1;
+        };
+
+        increase.onclick = () => {
+            input.value = parseInt(input.value) + 1;
+        };
+
+        clearBtn.onclick = () => {
+            addToCart(menuId, 0, "delete");
+            input.value = 1;
+        };
+
+        addBtn.onclick = () => {
+            const qty = parseInt(input.value);
+            if (qty <= 0) return;
+            addToCart(menuId, qty, "add");
+        };
+    });
+
+    function addToCart(menuId, quantity, action) {
+
+        if (!isLoggedIn) {
+            window.location.href = "<%=request.getContextPath()%>/login.jsp";
+            return;
+        }
+
+        fetch("<%=request.getContextPath()%>/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `action=${action}&menuId=${menuId}&quantity=${quantity}`
+        })
+        .then(r => r.text())
+        .then(res => {
+
+            if (res.trim() === "success") {
+                showToast(action === "delete" ? "Item removed!" : "Added to cart!");
+                updateCartBadge();
+            } else {
+                alert("Cart update failed!");
+            }
+        });
+    }
+
+    window.onload = updateCartBadge;
+</script>
+
+
+</body>
+</html>

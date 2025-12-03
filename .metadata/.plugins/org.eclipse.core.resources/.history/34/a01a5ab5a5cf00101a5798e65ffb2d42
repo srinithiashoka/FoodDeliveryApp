@@ -1,0 +1,115 @@
+<%@ page import="com.foodapp.model.User"%>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl"%>
+<%@ page import="com.foodapp.dao.CartDAO"%>
+<%@ page import="com.foodapp.model.CartItem"%>
+<%
+User user = (User) session.getAttribute("user");
+if(user == null){
+    response.sendRedirect("login.jsp?error=Please login first");
+    return;
+}
+
+String message = "";
+CartDAO cartDAO = new CartDAOImpl();
+
+String action = request.getParameter("action");
+String menuIdStr = request.getParameter("menuId");
+String quantityStr = request.getParameter("quantity");
+
+if(action != null){
+    int menuId = 0;
+    int quantity = 0;
+    try {
+        if(menuIdStr != null && !menuIdStr.isEmpty()) menuId = Integer.parseInt(menuIdStr);
+        if(quantityStr != null && !quantityStr.isEmpty()) quantity = Integer.parseInt(quantityStr);
+    } catch(Exception e) {
+        message = "Invalid number format!";
+    }
+
+    switch(action){
+        case "add":
+            if(cartDAO.addOrUpdateCart(user.getUserId(), menuId, quantity)){
+                message = "Item added/updated successfully!";
+            } else {
+                message = "Cart update failed!";
+            }
+            break;
+        case "delete":
+            if(cartDAO.removeFromCart(user.getUserId(), menuId)){
+                message = "Item removed successfully!";
+            } else {
+                message = "Remove failed!";
+            }
+            break;
+        case "clear":
+            if(cartDAO.clearCartByUserId(user.getUserId())){
+                message = "Cart cleared!";
+            } else {
+                message = "Clear cart failed!";
+            }
+            break;
+        case "viewCount":
+            message = "Total items in cart: " + cartDAO.getCartItemCount(user.getUserId());
+            break;
+        default:
+            message = "Unknown action!";
+    }
+}
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cart Test - FoodHub</title>
+</head>
+<body>
+<h2>Cart Test Page</h2>
+<p>Logged in as: <b><%= user.getUsername() %></b></p>
+<p style="color:green;"><%= message %></p>
+
+<h3>Add / Update Item</h3>
+<form method="post">
+    <input type="hidden" name="action" value="add">
+    Menu ID: <input type="number" name="menuId" required>
+    Quantity: <input type="number" name="quantity" required>
+    <button type="submit">Add / Update</button>
+</form>
+
+<h3>Remove Item</h3>
+<form method="post">
+    <input type="hidden" name="action" value="delete">
+    Menu ID: <input type="number" name="menuId" required>
+    <button type="submit">Remove</button>
+</form>
+
+<h3>Clear Cart</h3>
+<form method="post">
+    <input type="hidden" name="action" value="clear">
+    <button type="submit">Clear Cart</button>
+</form>
+
+<h3>View Total Items</h3>
+<form method="post">
+    <input type="hidden" name="action" value="viewCount">
+    <button type="submit">View Count</button>
+</form>
+
+<h3>Current Cart</h3>
+<ul>
+<%
+List<CartItem> items = cartDAO.getCartByUser(user.getUserId());
+if(items.isEmpty()){
+%>
+<li>Cart is empty</li>
+<%
+}else{
+    for(CartItem item : items){
+%>
+<li>Menu ID: <%= item.getMenuId() %> | Quantity: <%= item.getQuantity() %></li>
+<%
+    }
+}
+%>
+</ul>
+</body>
+</html>

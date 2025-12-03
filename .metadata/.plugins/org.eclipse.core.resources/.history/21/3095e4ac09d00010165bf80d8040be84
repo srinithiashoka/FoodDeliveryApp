@@ -1,0 +1,94 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession();
+
+        int menuId = Integer.parseInt(request.getParameter("menuId"));
+        int quantity = Integer.parseInt(request.getParameter("quantity"));
+        String action = request.getParameter("action");
+
+        MenuDAO menuDAO = new MenuDAOImpl();
+        Menu menu = menuDAO.getMenuById(menuId); // includes restaurantId
+
+        if (menu == null) {
+            writeJson(response, "error", "Invalid menu item");
+            return;
+        }
+
+        int incomingRestaurantId = menu.getRestaurantId();
+        Integer currentRestaurantId = (Integer) session.getAttribute("cartRestaurantId");
+
+        // CONDITION: If cart has different restaurant → clear cart
+        if (currentRestaurantId != null && currentRestaurantId != incomingRestaurantId) {
+            session.setAttribute("cart", new HashMap<Integer, Integer>());
+        }
+
+        // Update cart restaurant ID
+        session.setAttribute("cartRestaurantId", incomingRestaurantId);
+
+        // Get cart map
+        Map<Integer, Integer> cart = (Map<Integer, Integer>) session.getAttribute("cart");
+        if (cart == null) {
+            cart = new HashMap<>();
+            session.setAttribute("cart", cart);
+        }
+
+        // Handle add/remove
+        if ("add".equals(action)) {
+            cart.put(menuId, cart.getOrDefault(menuId, 0) + quantity);
+            writeJson(response, "success", "Item added");
+        } else if ("remove".equals(action)) {
+            cart.remove(menuId);
+            writeJson(response, "success", "Item removed");
+        }
+    }
+
+    private void writeJson(HttpServletResponse response, String status, String message) throws IOException {
+        response.setContentType("application/json");
+        response.getWriter().write("{\"status\":\"" + status + "\", \"message\":\"" + message + "\"}");
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        System.out.println("=== CARTSERVLET GET START ===");
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+
+        if ("viewcount".equalsIgnoreCase(action)) {
+            int count = cartDAO.getCartItemCount(userId);
+            String json = "{\"count\":" + count + "}";
+            System.out.println("GET RESPONSE: " + json);
+            response.getWriter().write(json);
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+        System.out.println("=== CARTSERVLET GET END ===");
+    }
+}

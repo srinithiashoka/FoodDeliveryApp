@@ -1,0 +1,166 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List"%>
+<%@ page import="com.foodapp.model.Menu"%>
+<%@ page import="com.foodapp.model.User"%>
+
+<%
+    @SuppressWarnings("unchecked")
+    List<Menu> menuList = (List<Menu>) request.getAttribute("menuList");
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : null;
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - FoodHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png" alt="Cart">
+                    </a>
+                    <span class="cart-badge">
+                        <%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container menu-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+    <h1 class="menu-title">Menu</h1>
+
+    <% if (menuList != null && !menuList.isEmpty()) { %>
+        <% for (Menu m : menuList) { %>
+        <div class="menu-item menu-item-wrapper">
+            <div class="menu-image">
+                <img src="<%= (m.getImagePath() != null && !m.getImagePath().isEmpty())
+                                ? m.getImagePath()
+                                : "images/restaurants/" + m.getRestaurantId() + "/" + m.getMenuId() + ".jpg" %>"
+                     alt="<%= m.getItemName() %>">
+            </div>
+            <div class="menu-content">
+                <div class="menu-header">
+                    <h3><%= m.getItemName() %></h3>
+                    <span class="menu-price">₹<%= m.getPrice() %></span>
+                </div>
+                <p class="menu-description"><%= m.getDescription() %></p>
+
+                <div class="quantity-controls">
+                    <button type="button" class="qty-btn decrease">-</button>
+                    <input type="text" value="0" class="quantity-input-display" readonly>
+                    <button type="button" class="qty-btn increase">+</button>
+                    <button type="button" class="btn-add" <%= !m.isAvailable() ? "disabled" : "" %>>
+                        Add to Cart
+                    </button>
+                </div>
+
+                <input type="hidden" class="menu-id" value="<%= m.getMenuId() %>">
+            </div>
+        </div>
+        <% } %>
+    <% } else { %>
+        <p class="no-menu-items">No menu items available.</p>
+    <% } %>
+</div>
+
+<div id="toast"></div>
+
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+const isLoggedIn = <%= (userId != null) ? "true" : "false" %>;
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function getMenuId(item) {
+    const menuInput = item.querySelector(".menu-id");
+    if (!menuInput) return 0;
+    const id = parseInt(menuInput.value.trim(), 10);
+    return (isNaN(id) || id <= 0) ? 0 : id;
+}
+
+function addToCart(menuId, quantity, action) {
+    if (!isLoggedIn) { window.location.href = "login.jsp"; return; }
+    if (menuId <= 0 || quantity < 0) { showToast("Invalid menu item"); return; }
+
+    fetch("cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `action=${action}&menuId=${menuId}&quantity=${quantity}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") showToast("Your item added successfully");
+        else showToast(data.message || "Cart update failed");
+        updateCartBadge();
+    })
+    .catch(err => { console.error(err); showToast("Network error"); });
+}
+
+function updateCartBadge() {
+    fetch("cart?action=viewcount")
+    .then(res => res.json())
+    .then(data => {
+        const badge = document.querySelector(".cart-badge");
+        if (badge) badge.textContent = data.count || 0;
+    })
+    .catch(err => console.error(err));
+}
+
+document.querySelectorAll(".menu-item-wrapper").forEach(item => {
+    const decrease = item.querySelector(".decrease");
+    const increase = item.querySelector(".increase");
+    const addBtn = item.querySelector(".btn-add");
+    const input = item.querySelector(".quantity-input-display");
+
+    decrease.onclick = () => { let val = parseInt(input.value || "0", 10); if(val>0) input.value = val-1; };
+    increase.onclick = () => { let val = parseInt(input.value || "0", 10); input.value = val+1; };
+
+    addBtn.onclick = () => {
+        const menuId = getMenuId(item);
+        const qty = parseInt(input.value || "0", 10);
+        addToCart(menuId, qty, qty>0?"add":"remove");
+    };
+});
+
+window.onload = updateCartBadge;
+</script>
+
+</body>
+</html>

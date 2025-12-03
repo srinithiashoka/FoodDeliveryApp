@@ -1,0 +1,153 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        System.out.println("=== CARTSERVLET POST START ===");
+        System.out.println("URI: " + request.getRequestURI());
+        System.out.println("ContextPath: " + request.getContextPath());
+        
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+        System.out.println("User: " + (user != null ? user.getUserId() : "NULL"));
+
+        if (user == null) {
+            String json = "{\"status\":\"error\",\"message\":\"User not logged in\"}";
+            System.out.println("RESPONSE: " + json);
+            response.getWriter().write(json);
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        System.out.println("RAW PARAMS -> action='" + action + "' | menuId='" + menuIdStr + "' | quantity='" + quantityStr + "'");
+
+        if (action == null || action.trim().isEmpty()) {
+            String json = "{\"status\":\"error\",\"message\":\"Missing action\"}";
+            System.out.println("RESPONSE: " + json);
+            response.getWriter().write(json);
+            return;
+        }
+
+        int userId = user.getUserId();
+        int menuId = 0;
+        int quantity = 0;
+
+        try {
+            if (menuIdStr != null && !menuIdStr.trim().isEmpty()) {
+                menuId = Integer.parseInt(menuIdStr.trim());
+            }
+            if (quantityStr != null && !quantityStr.trim().isEmpty()) {
+                quantity = Integer.parseInt(quantityStr.trim());
+            }
+            System.out.println("PARSED -> menuId=" + menuId + " | quantity=" + quantity);
+
+            if (menuId <= 0 || quantity < 0) {
+                String json = "{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}";
+                System.out.println("RESPONSE: " + json);
+                response.getWriter().write(json);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("PARSE ERROR: " + e.getMessage());
+            String json = "{\"status\":\"error\",\"message\":\"Invalid menuId or quantity\"}";
+            response.getWriter().write(json);
+            return;
+        }
+
+        // COMPLETE SWITCH STATEMENT
+        switch (action.toLowerCase()) {
+            case "add":
+                if (quantity == 0) {
+                    boolean removed = cartDAO.removeFromCart(userId, menuId);
+                    String json = removed
+                        ? "{\"status\":\"success\",\"message\":\"Item removed from cart!\"}"
+                        : "{\"status\":\"error\",\"message\":\"Item not in cart\"}";
+                    System.out.println("RESPONSE: " + json);
+                    response.getWriter().write(json);
+                } else {
+                    boolean added = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+                    String json = added
+                        ? "{\"status\":\"success\",\"message\":\"Added to cart!\"}"
+                        : "{\"status\":\"error\",\"message\":\"Failed to update cart\"}";
+                    System.out.println("RESPONSE: " + json);
+                    response.getWriter().write(json);
+                }
+                break;
+
+            case "remove":
+                boolean removed = cartDAO.removeFromCart(userId, menuId);
+                String jsonRemove = removed
+                    ? "{\"status\":\"success\",\"message\":\"Item removed from cart!\"}"
+                    : "{\"status\":\"error\",\"message\":\"Item not in cart\"}";
+                System.out.println("RESPONSE: " + jsonRemove);
+                response.getWriter().write(jsonRemove);
+                break;
+
+            case "clear":
+                boolean cleared = cartDAO.clearCartByUserId(userId);
+                String jsonClear = cleared
+                    ? "{\"status\":\"success\",\"message\":\"Cart cleared!\"}"
+                    : "{\"status\":\"error\",\"message\":\"Failed to clear cart\"}";
+                System.out.println("RESPONSE: " + jsonClear);
+                response.getWriter().write(jsonClear);
+                break;
+
+            default:
+                String jsonDefault = "{\"status\":\"error\",\"message\":\"Unknown action: " + action + "\"}";
+                System.out.println("RESPONSE: " + jsonDefault);
+                response.getWriter().write(jsonDefault);
+        }
+        System.out.println("=== CARTSERVLET POST END ===");
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        System.out.println("=== CARTSERVLET GET START ===");
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        int userId = user.getUserId();
+
+        if ("viewcount".equalsIgnoreCase(action)) {
+            int count = cartDAO.getCartItemCount(userId);
+            String json = "{\"count\":" + count + "}";
+            System.out.println("GET RESPONSE: " + json);
+            response.getWriter().write(json);
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+        System.out.println("=== CARTSERVLET GET END ===");
+    }
+}

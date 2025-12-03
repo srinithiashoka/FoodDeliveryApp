@@ -1,0 +1,61 @@
+package com.foodapp.servlet;
+
+import java.io.IOException;
+import com.foodapp.dao.UserDAO;
+import com.foodapp.dao.impl.UserDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+
+@WebServlet("/user")
+public class UserController extends HttpServlet {
+    private UserDAO userDAO = new UserDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        if ("register".equalsIgnoreCase(action)) {
+            registerUser(request, response);
+        } else if ("login".equalsIgnoreCase(action)) {
+            loginUser(request, response);
+        }
+    }
+
+    private void registerUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        User user = new User();
+        user.setUsername(request.getParameter("username"));
+        user.setPassword(request.getParameter("password"));
+        user.setEmail(request.getParameter("email"));
+        user.setPhone(request.getParameter("phone"));
+        user.setAddress(request.getParameter("address"));
+        user.setRole(request.getParameter("role"));
+
+        boolean success = userDAO.addUser(user);
+        if (success) {
+            response.getWriter().println("User registered successfully");
+        } else {
+            response.getWriter().println("Failed to register user");
+        }
+    }
+
+    private void loginUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        User user = userDAO.login(username, password);
+
+        if (user != null) {
+            HttpSession session = request.getSession();
+            session.setAttribute("user", user);
+            response.getWriter().println("Login successful");
+        } else {
+            response.getWriter().println("Invalid username or password");
+        }
+    }
+}

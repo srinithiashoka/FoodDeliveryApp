@@ -1,0 +1,28 @@
+package com.foodapp.model;
+
+public class CartItem {
+    private int cartId;
+    private int menuId;
+    private String foodName;
+    private String foodImage;
+    private double price;
+    private int quantity;
+
+    public int getCartId() { return cartId; }
+    public void setCartId(int cartId) { this.cartId = cartId; }
+
+    public int getMenuId() { return menuId; }
+    public void setMenuId(int menuId) { this.menuId = menuId; }
+
+    public String getFoodName() { return foodName; }
+    public void setFoodName(String foodName) { this.foodName = foodName; }
+
+    public String getFoodImage() { return foodImage; }
+    public void setFoodImage(String foodImage) { this.foodImage = foodImage; }
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) { this.price = price; }
+
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+}

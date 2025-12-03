@@ -1,0 +1,66 @@
+<%@ include file="header.jsp" %>
+
+<div class="cart-container">
+    <a href="restaurants.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+
+    <h2 class="menu-title">Your Cart</h2>
+
+    <% if(cartItems.isEmpty()){ %>
+        <p class="no-menu-items">Your cart is empty.</p>
+    <% } else { 
+        for(CartItem item : cartItems){ %>
+            <div class="cart-item">
+                <div class="cart-image">
+                    <img src="<%= item.getFoodImage()!=null&&!item.getFoodImage().isEmpty()?item.getFoodImage():"images/restaurants/default.jpg" %>" alt="<%= item.getFoodName() %>">
+                </div>
+                <div class="cart-content">
+                    <div class="cart-header">
+                        <h3><%= item.getFoodName() %></h3>
+                        <div class="cart-price">₹<%= item.getPrice() %></div>
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="qty-btn decrease">-</button>
+                        <input type="text" value="<%= item.getQuantity() %>" class="quantity-input-display" readonly>
+                        <button class="qty-btn increase">+</button>
+                        <button class="btn-remove">Remove</button>
+                    </div>
+                </div>
+            </div>
+    <% }} %>
+
+    <div class="cart-summary">
+        <h3>Order Summary</h3>
+        <p>Subtotal <span>₹<%= String.format("%.2f", subtotal) %></span></p>
+        <p>Tax (5%) <span>₹<%= String.format("%.2f", tax) %></span></p>
+        <p>Discount (10%) <span>-₹<%= String.format("%.2f", discount) %></span></p>
+        <p class="grand-total">Grand Total <span>₹<%= String.format("%.2f", grandTotal) %></span></p>
+
+        <div class="payment-method">
+            <h4>Payment Method</h4>
+            <label><input type="radio" name="payment" value="cod" checked> Cash on Delivery</label>
+            <label><input type="radio" name="payment" value="card"> Credit/Debit Card</label>
+            <label><input type="radio" name="payment" value="upi"> UPI</label>
+        </div>
+
+        <button>Proceed to Payment</button>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.cart-item').forEach(item=>{
+    const qtyInput = item.querySelector('.quantity-input-display');
+    const price = parseFloat(item.querySelector('.cart-price').textContent.replace('₹',''));
+    
+    item.querySelector('.increase').addEventListener('click', ()=>{
+        qtyInput.value = parseInt(qtyInput.value)+1;
+    });
+    item.querySelector('.decrease').addEventListener('click', ()=>{
+        if(parseInt(qtyInput.value) > 1) qtyInput.value = parseInt(qtyInput.value)-1;
+    });
+    item.querySelector('.btn-remove').addEventListener('click', ()=>{
+        item.remove();
+    });
+});
+</script>
+
+<%@ include file="footer.jsp" %>

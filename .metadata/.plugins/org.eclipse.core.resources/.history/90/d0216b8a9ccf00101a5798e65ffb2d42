@@ -1,0 +1,35 @@
+package com.foodapp.dao;
+
+import java.util.List;
+import com.foodapp.model.Cart;
+import com.foodapp.model.CartItem;
+
+public interface CartDAO {
+
+```
+// Add a new item or update quantity if already exists
+boolean addOrUpdateCart(int userId, int menuId, int quantity);
+
+// Remove item from cart
+boolean removeFromCart(int userId, int menuId);
+
+// Update an existing cart item (by cartId)
+boolean updateCart(Cart cart);
+
+// Delete a cart item by cartId
+boolean deleteCartItem(int cartId);
+
+// Get all items in a user's cart
+List<CartItem> getCartByUser(int userId);
+
+// Clear all items in a user's cart
+boolean clearCartByUserId(int userId);
+
+// Check if an item exists in cart
+boolean itemExists(int userId, int menuId);
+
+// Get total quantity of items in user's cart
+int getCartItemCount(int userId);
+```
+
+}

@@ -1,0 +1,110 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.MenuDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.dao.impl.MenuDAOImpl;
+import com.foodapp.model.Menu;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+    private MenuDAO menuDAO = new MenuDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        int userId = user.getUserId();
+
+        if (action == null || menuIdStr == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+            return;
+        }
+
+        int menuId = Integer.parseInt(menuIdStr);
+        int quantity = (quantityStr != null) ? Integer.parseInt(quantityStr) : 1;
+
+        // Fetch menu item to get restaurant ID
+        Menu menu = menuDAO.getMenuItemById(menuId);
+
+        if (menu == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Menu item not found\"}");
+            return;
+        }
+
+        int newRestaurantId = menu.getRestaurantId();
+
+        // Check current cart restaurant ID
+        Integer currentCartRestaurant = cartDAO.getRestaurantIdInCart(userId);
+
+        // DIFFERENT RESTAURANT → CLEAR CART
+        if (currentCartRestaurant != null && currentCartRestaurant != newRestaurantId) {
+            cartDAO.clearCartByUserId(userId);
+        }
+
+        switch (action.toLowerCase()) {
+
+            case "add":
+                if (quantity <= 0) {
+                    boolean removed = cartDAO.removeFromCart(userId, menuId);
+                    response.getWriter().write(
+                            removed ?
+                                    "{\"status\":\"success\",\"message\":\"Item removed\"}" :
+                                    "{\"status\":\"error\",\"message\":\"Item not found\"}"
+                    );
+                } else {
+                    boolean added = cartDAO.addOrUpdateCart(userId, menuId, quantity, newRestaurantId);
+                    response.getWriter().write(
+                            added ?
+                                    "{\"status\":\"success\",\"message\":\"Item added/updated\"}" :
+                                    "{\"status\":\"error\",\"message\":\"Failed to update cart\"}"
+                    );
+                }
+                break;
+
+            case "remove":
+                boolean removed = cartDAO.removeFromCart(userId, menuId);
+                response.getWriter().write(
+                        removed ?
+                                "{\"status\":\"success\",\"message\":\"Item removed\"}" :
+                                "{\"status\":\"error\",\"message\":\"Item not found\"}"
+                );
+                break;
+
+            case "clear":
+                boolean cleared = cartDAO.clearCartByUserId(userId);
+                response.getWriter().write(
+                        cleared ?
+                                "{\"status\":\"success\",\"message\":\"Cart cleared\"}" :
+                                "{\"status\":\"error\",\"message\":\"Failed to clear cart\"}"
+                );
+                break;
+
+            default:
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+}

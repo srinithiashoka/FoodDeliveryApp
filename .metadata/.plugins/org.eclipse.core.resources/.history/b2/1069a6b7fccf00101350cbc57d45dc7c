@@ -1,0 +1,93 @@
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.CartDAO" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    CartDAO cartDAO = new CartDAOImpl();
+    List<CartItem> cartList = cartDAO.getCartByUser(user.getUserId());
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Cart - FoodHub</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin-top: 20px; }
+        th, td { padding: 10px; text-align: center; border: 1px solid #ccc; }
+        button { padding: 5px 10px; cursor: pointer; }
+        .quantity-btn { width: 25px; }
+    </style>
+</head>
+<body>
+
+<h2>Your Cart</h2>
+
+<% if (cartList.isEmpty()) { %>
+    <h3>No items in cart</h3>
+<% } else { %>
+
+<table>
+    <tr>
+        <th>Food</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        <th>Action</th>
+    </tr>
+
+<%
+    double grandTotal = 0;
+    for (CartItem c : cartList) {
+        double total = c.getPrice() * c.getQuantity();
+        grandTotal += total;
+%>
+    <tr>
+        <td><%= c.getFoodName() %></td>
+        <td>
+            <form method="post" action="cart" style="display:inline;">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="menuId" value="<%= c.getMenuId() %>">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="quantity-btn">+</button>
+            </form>
+            <%= c.getQuantity() %>
+            <form method="post" action="cart" style="display:inline;">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="menuId" value="<%= c.getMenuId() %>">
+                <input type="hidden" name="quantity" value="-1">
+                <button type="submit" class="quantity-btn">-</button>
+            </form>
+        </td>
+        <td>₹ <%= c.getPrice() %></td>
+        <td>₹ <%= total %></td>
+        <td>
+            <form method="post" action="cart">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="menuId" value="<%= c.getMenuId() %>">
+                <button type="submit">Remove</button>
+            </form>
+        </td>
+    </tr>
+<% } %>
+
+</table>
+
+<h3>Grand Total: ₹ <%= grandTotal %></h3>
+
+<form method="post" action="cart">
+    <input type="hidden" name="action" value="clear">
+    <button type="submit" style="margin-top:20px; background:red; color:#fff;">Clear Cart</button>
+</form>
+
+<% } %>
+
+</body>
+</html>

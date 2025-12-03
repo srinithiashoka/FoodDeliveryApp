@@ -1,0 +1,123 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+import java.io.IOException;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+    private CartDAO cartDAO = new CartDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        User user = (User) request.getSession().getAttribute("user");
+
+        if (user == null) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"User not logged in\"}");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        if (action == null || action.isEmpty()) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+            return;
+        }
+
+        switch (action.toLowerCase()) {
+            case "add":
+                handleAdd(request, response, user.getUserId());
+                break;
+            case "remove":
+                handleRemove(request, response, user.getUserId());
+                break;
+            case "clear":
+                handleClear(request, response, user.getUserId());
+                break;
+            case "viewcount":
+                handleViewCount(request, response, user.getUserId());
+                break;
+            default:
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown action\"}");
+        }
+    }
+
+    private void handleAdd(HttpServletRequest request, HttpServletResponse response, int userId) throws IOException {
+        String menuIdStr = request.getParameter("menuId");
+        String quantityStr = request.getParameter("quantity");
+
+        if (menuIdStr == null || menuIdStr.isEmpty() || quantityStr == null || quantityStr.isEmpty()) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Menu ID or quantity missing\"}");
+            return;
+        }
+
+        int menuId, quantity;
+        try {
+            menuId = Integer.parseInt(menuIdStr);
+            quantity = Integer.parseInt(quantityStr);
+        } catch (NumberFormatException e) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid menu ID or quantity\"}");
+            return;
+        }
+
+        boolean success = cartDAO.addToCart(userId, menuId, quantity);
+        if (success) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Cart updated\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Failed to update cart\"}");
+        }
+    }
+
+    private void handleRemove(HttpServletRequest request, HttpServletResponse response, int userId) throws IOException {
+        String menuIdStr = request.getParameter("menuId");
+
+        if (menuIdStr == null || menuIdStr.isEmpty()) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Menu ID missing\"}");
+            return;
+        }
+
+        int menuId;
+        try {
+            menuId = Integer.parseInt(menuIdStr);
+        } catch (NumberFormatException e) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid menu ID\"}");
+            return;
+        }
+
+        boolean success = cartDAO.removeFromCart(userId, menuId);
+        if (success) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Item removed from cart\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Item not in cart\"}");
+        }
+    }
+
+    private void handleClear(HttpServletRequest request, HttpServletResponse response, int userId) throws IOException {
+        boolean success = cartDAO.clearCart(userId);
+        if (success) {
+            response.getWriter().write("{\"status\":\"success\",\"message\":\"Cart cleared\"}");
+        } else {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Failed to clear cart\"}");
+        }
+    }
+
+    private void handleViewCount(HttpServletRequest request, HttpServletResponse response, int userId) throws IOException {
+        int count = cartDAO.getCartCount(userId);
+        response.getWriter().write("{\"status\":\"success\",\"count\":" + count + "}");
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        doPost(request, response); // Support GET as well
+    }
+}

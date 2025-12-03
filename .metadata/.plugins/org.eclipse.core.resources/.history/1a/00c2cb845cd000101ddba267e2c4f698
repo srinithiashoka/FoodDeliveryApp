@@ -1,0 +1,127 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.CartItem" %>
+<%@ page import="com.foodapp.dao.impl.CartDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    CartDAOImpl cartDAO = new CartDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    User user = (User) session.getAttribute("user");
+    Integer userId = (user != null) ? user.getUserId() : 0;
+
+    List<CartItem> cartItems = cartDAO.getCartByUser(userId);
+
+    double subtotal = 0;
+    for(CartItem item : cartItems){
+        subtotal += item.getPrice() * item.getQuantity();
+    }
+    double tax = subtotal * 0.05;
+    double discount = subtotal * 0.1;
+    double grandTotal = subtotal + tax - discount;
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodHub - Your Cart</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/cart.css">
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span>FoodHub</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="home.jsp">Restaurants</a></li>
+            </ul>
+            <div class="nav-actions">
+                <% if(user == null){ %>
+                    <button onclick="location.href='login.jsp'" class="btn btn-login">Login</button>
+                    <button onclick="location.href='signup.jsp'" class="btn btn-signup">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp" title="View Cart"><i class="fas fa-shopping-cart"></i></a>
+                    <% if(cartItems.size() > 0) { %>
+                        <span class="cart-badge"><%= cartItems.size() %></span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="cart-container">
+    <a href="home.jsp" class="back-link"><i class="fa fa-arrow-left"></i> Back to Restaurants</a>
+
+    <h2 class="cart-title">Your Cart</h2>
+
+    <% if(cartItems.isEmpty()){ %>
+        <p class="empty-cart">Your cart is empty.</p>
+    <% } else { %>
+        <% for(CartItem item : cartItems){
+            Menu menu = menuDAO.getMenuItemById(item.getMenuId());
+            String imagePath = (menu != null && menu.getImagePath() != null && !menu.getImagePath().isEmpty()) 
+                               ? menu.getImagePath() 
+                               : "images/default-food.jpg";
+        %>
+        <div class="cart-item" data-menu-id="<%= item.getMenuId() %>">
+            <div class="cart-image">
+                <img src="<%= request.getContextPath() + "/" + imagePath %>" 
+                     alt="<%= item.getFoodName() %>" 
+                     onerror="this.src='<%= request.getContextPath() %>/images/default-food.jpg'">
+            </div>
+            <div class="cart-content">
+                <div class="cart-header">
+                    <h3><%= item.getFoodName() %></h3>
+                    <div class="cart-price" data-price="<%= item.getPrice() %>">₹<%= item.getPrice() %></div>
+                </div>
+                <div class="quantity-controls">
+                    <button class="qty-btn decrease">-</button>
+                    <input type="number" class="quantity-input" value="<%= item.getQuantity() %>" min="1" max="99">
+                    <button class="qty-btn increase">+</button>
+                    <button class="btn-remove">Remove</button>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-row">Subtotal <span id="subtotal">₹<%= String.format("%.2f", subtotal) %></span></div>
+            <div class="summary-row">Tax (5%) <span id="tax">₹<%= String.format("%.2f", tax) %></span></div>
+            <div class="summary-row">Discount (10%) <span id="discount">-₹<%= String.format("%.2f", discount) %></span></div>
+            <div class="summary-row grand-total">Grand Total <span id="grandTotal">₹<%= String.format("%.2f", grandTotal) %></span></div>
+
+            <div class="payment-method">
+                <h4>Select Payment Method:</h4>
+                <label><input type="radio" name="payment" value="cash" checked> Cash on Delivery</label>
+                <label><input type="radio" name="payment" value="card"> Credit/Debit Card</label>
+                <label><input type="radio" name="payment" value="upi"> UPI Payment</label>
+            </div>
+
+            <button class="checkout-btn" onclick="confirmOrder()">Confirm Order</button>
+        </div>
+    <% } %>
+</div>
+
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script src="js/cart.js"></script>
+</body>
+</html>

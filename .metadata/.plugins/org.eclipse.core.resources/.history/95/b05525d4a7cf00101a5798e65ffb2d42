@@ -1,0 +1,14 @@
+String userIdStr = request.getParameter("userId");
+String menuIdStr = request.getParameter("menuId");
+String quantityStr = request.getParameter("quantity");
+
+if (userIdStr == null || userIdStr.isEmpty() ||
+    menuIdStr == null || menuIdStr.isEmpty() ||
+    quantityStr == null || quantityStr.isEmpty()) {
+    response.getWriter().write("Invalid parameters");
+    return;
+}
+
+int userId = Integer.parseInt(userIdStr);
+int menuId = Integer.parseInt(menuIdStr);
+int quantity = Integer.parseInt(quantityStr);

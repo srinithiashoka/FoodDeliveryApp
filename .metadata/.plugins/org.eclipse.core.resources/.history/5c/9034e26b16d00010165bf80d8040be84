@@ -1,0 +1,252 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.model.User" %>
+
+<%
+    String location = request.getParameter("location");
+    String restaurantName = request.getParameter("restaurant");
+
+    RestaurantDAO dao = new RestaurantDAOImpl();
+    List<Restaurant> restaurants;
+
+    if ((location != null && !location.isEmpty()) || (restaurantName != null && !restaurantName.isEmpty())) {
+        restaurants = dao.searchRestaurants(location, restaurantName);
+    } else {
+        restaurants = dao.getActiveRestaurants();
+    }
+
+    User user = (User) session.getAttribute("user");
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FoodHub - Food Delivery App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/home.css"> 
+
+    <style>
+        .cart-icon-wrapper { position: relative; display: inline-block; }
+        .cart-badge { 
+            position: absolute; top: -8px; right: -8px; 
+            background: #ff4444; color: #fff; border-radius: 50%; 
+            padding: 2px 6px; font-size: 12px; font-weight: bold; 
+            min-width: 18px; text-align: center;
+        }
+        .restaurant-card-link { 
+            text-decoration: none; color: inherit; display: block; 
+            transition: transform 0.2s ease;
+        }
+        .restaurant-card-link:hover .restaurant-card {
+            transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .loading { text-align: center; color: #666; padding: 40px; }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-motorcycle scooter-icon"></i>
+                <span class="logo-text">FoodHub</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="home.jsp">Home</a></li>
+                <li><a href="#">Restaurants</a></li>
+                <li><a href="#">Offers</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <% if (user == null) { %>
+                    <button class="btn btn-login" onclick="location.href='login.jsp'">Login</button>
+                    <button class="btn btn-signup" onclick="location.href='signup.jsp'">Sign Up</button>
+                <% } else { %>
+                    <span>Welcome, <%= user.getUsername() %></span>
+                <% } %>
+
+                <div class="cart-icon-wrapper">
+                    <a href="cart.jsp">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png"
+                             alt="Cart" title="My Cart" style="width: 28px; height: 28px;">
+                    </a>
+                    <span class="cart-badge"><%= session.getAttribute("cartCount") != null ? session.getAttribute("cartCount") : 0 %></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-text-box">
+            <h1>Order food from your favourite restaurants near you</h1>
+            <p>Get your food delivered fast</p>
+        </div>
+
+        <div class="search-box">
+            <form action="home.jsp" method="get" class="search-form">
+                <div class="input-wrapper">
+                    <i class="fa fa-map-marker-alt"></i>
+                    <input type="text" name="location" placeholder="Enter your location"
+                           value="<%= location != null ? location : "" %>">
+                </div>
+
+                <div class="input-wrapper">
+                    <i class="fa fa-search"></i>
+                    <input type="text" name="restaurant" placeholder="Search restaurants"
+                           value="<%= restaurantName != null ? restaurantName : "" %>">
+                </div>
+
+                <button type="submit" class="btn btn-login">Find Food</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIES SECTION -->
+<section class="categories">
+    <div class="container">
+        <h2>Popular Categories</h2>
+        <div class="category-grid">
+            <div class="category-card"><img src="images/pizzas.jpg"><p>Pizza</p></div>
+            <div class="category-card"><img src="images/briyani.jpeg"><p>Biryani</p></div>
+            <div class="category-card"><img src="images/burgers.jpg"><p>Burgers</p></div>
+            <div class="category-card"><img src="images/cake.jpg"><p>Cakes</p></div>
+            <div class="category-card"><img src="images/meals.jpeg"><p>Meals</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- RESTAURANTS SECTION -->
+<section class="restaurants">
+    <div class="container">
+        <h2>Top Restaurants Near You</h2>
+        <div class="restaurant-grid">
+            <% if (restaurants != null && !restaurants.isEmpty()) {
+                for (Restaurant r : restaurants) { %>
+            <a href="menu?action=byRestaurant&restaurantId=<%= r.getRestaurantId() %>" class="restaurant-card-link">
+                <div class="restaurant-card">
+                    <img src="<%= r.getImagePath() != null && !r.getImagePath().isEmpty() ? r.getImagePath() : "images/restaurants/default.jpg" %>" 
+                         alt="<%= r.getName() %>" onerror="this.src='images/restaurants/default.jpg'">
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+                        <div class="restaurant-meta">
+                            <span class="cuisine"><%= r.getCuisineType() %></span>
+                            <span class="delivery-time"><%= r.getDeliveryTime() %></span>
+                            <% if (r.isOpenNow()) { %>
+                                <i class="fa fa-circle open-status" title="Open Now"></i>
+                            <% } else { %>
+                                <i class="fa fa-circle closed-status" title="Closed"></i>
+                            <% } %>
+                        </div>
+                        <p class="address"><%= r.getAddress() %></p>
+                        <div class="restaurant-rating">
+                            ★★★★☆ (124 ratings)
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <%  }
+            } else { %>
+                <div class="loading">
+                    <i class="fa fa-search fa-3x" style="color: #ddd;"></i>
+                    <p>No restaurants found. Try different search terms.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2025 FoodHub | All Rights Reserved</p>
+</footer>
+
+<script>
+const isLoggedIn = <%= (user != null) ? "true" : "false" %>;
+const contextPath = "<%=request.getContextPath()%>";
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 2500);
+}
+
+// Add toast styles
+const toastStyle = document.createElement('style');
+toastStyle.textContent = `
+    .toast { 
+        position: fixed; top: 20px; right: 20px; 
+        padding: 12px 20px; border-radius: 6px; 
+        color: white; font-weight: 500; z-index: 10000;
+        transform: translateX(400px); transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.show { transform: translateX(0); }
+    .toast-success { background: #4CAF50; }
+    .toast-error { background: #f44336; }
+`;
+document.head.appendChild(toastStyle);
+
+// Update cart badge safely
+function updateCartBadge(count) {
+    const badge = document.querySelector(".cart-badge");
+    if (badge) {
+        if (count !== undefined) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'block' : 'none';
+        } else {
+            fetch(contextPath + "/cart?action=viewcount", { credentials: 'same-origin' })
+                .then(res => res.json())
+                .then(data => {
+                    if (badge) {
+                        badge.textContent = data.count || 0;
+                        badge.style.display = (data.count || 0) > 0 ? 'block' : 'none';
+                    }
+                })
+                .catch(err => console.error('Cart count fetch error:', err));
+        }
+    }
+}
+
+// Initialize cart badge on load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartBadge();
+    
+    // Add smooth scroll to anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,135 @@
+<%@ page import="com.foodapp.dao.impl.OrderDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.OrderItemDAOImpl" %>
+<%@ page import="com.foodapp.dao.impl.MenuDAOImpl" %>
+<%@ page import="com.foodapp.model.Order" %>
+<%@ page import="com.foodapp.model.OrderItem" %>
+<%@ page import="com.foodapp.model.Menu" %>
+<%@ page import="java.util.List" %>
+
+<%
+    String oid = request.getParameter("orderId");
+    if (oid == null) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    int orderId = Integer.parseInt(oid);
+
+    OrderDAOImpl orderDAO = new OrderDAOImpl();
+    OrderItemDAOImpl itemDAO = new OrderItemDAOImpl();
+    MenuDAOImpl menuDAO = new MenuDAOImpl();
+
+    Order order = orderDAO.getOrderById(orderId);
+    List<OrderItem> items = itemDAO.getItemsByOrder(orderId);
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Successful</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma;
+            background: #fff0f6;
+            margin: 0;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .box {
+            width: 500px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.08);
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .tick {
+            font-size: 70px;
+            color: #28a745;
+            animation: pop 0.6s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        h2 { color: #e6005c; }
+        .items-box {
+            margin-top: 15px;
+            text-align: left;
+        }
+        .item-row {
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .total {
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #d9004c;
+        }
+
+        .btn {
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #ff0055;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <div class="tick">✔</div>
+
+    <h2>Your Order is Successfully Placed!</h2>
+    <p>Order ID: <b><%= orderId %></b></p>
+    <p>Estimated Delivery: <b>30–40 minutes</b></p>
+
+    <div class="items-box">
+        <h3>Order Summary</h3>
+
+        <% double finalTotal = 0; %>
+
+        <% for (OrderItem it : items) {
+        	Menu m = menuDAO.getMenuItemById(it.getMenuId());
+                finalTotal += it.getTotalPrice();
+        %>
+
+            <div class="item-row">
+                <span><%= m.getItemName() %> × <%= it.getQuantity() %></span>
+                <span>₹ <%= it.getTotalPrice() %></span>
+            </div>
+
+        <% } %>
+
+        <div class="total">
+            Total Amount: ₹ <%= finalTotal %>
+        </div>
+    </div>
+
+    <a href="homepage.jsp" class="btn">Go to Home</a>
+
+</div>
+
+</body>
+</html>

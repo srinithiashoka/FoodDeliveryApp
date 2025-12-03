@@ -1,0 +1,132 @@
+package com.foodapp.servlet;
+
+import com.foodapp.dao.CartDAO;
+import com.foodapp.dao.impl.CartDAOImpl;
+import com.foodapp.model.CartItem;
+import com.foodapp.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet("/cart")
+public class CartServlet extends HttpServlet {
+
+
+private CartDAO cartDAO = new CartDAOImpl();
+
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    response.setContentType("text/plain");
+    HttpSession session = request.getSession();
+    User user = (User) session.getAttribute("user");
+
+    if (user == null) {
+        response.getWriter().write("fail: user not logged in");
+        return;
+    }
+
+    String action = request.getParameter("action");
+    String menuIdStr = request.getParameter("menuId");
+    String quantityStr = request.getParameter("quantity");
+
+    int userId = user.getUserId();
+
+    try {
+        int menuId = (menuIdStr != null && !menuIdStr.isEmpty()) ? Integer.parseInt(menuIdStr) : 0;
+        int quantity = (quantityStr != null && !quantityStr.isEmpty()) ? Integer.parseInt(quantityStr) : 0;
+
+        boolean success = false;
+        String message = "";
+
+        switch (action) {
+            case "add":
+                if (menuId <= 0) {
+                    message = "fail: invalid menuId";
+                } else if (quantity <= 0) {
+                    message = "fail: invalid quantity";
+                } else {
+                    success = cartDAO.addOrUpdateCart(userId, menuId, quantity);
+                    message = success ? "success" : "fail: DB insert/update failed";
+                }
+                break;
+
+            case "delete":
+                if (menuId <= 0) {
+                    message = "fail: invalid menuId";
+                } else {
+                    success = cartDAO.removeFromCart(userId, menuId);
+                    message = success ? "success" : "fail: item not in cart or DB error";
+                }
+                break;
+
+            case "clear":
+                success = cartDAO.clearCartByUserId(userId);
+                message = success ? "success" : "fail: cart already empty or DB error";
+                break;
+
+            case "viewCount":
+                int count = cartDAO.getCartItemCount(userId);
+                response.getWriter().write(String.valueOf(count));
+                return;
+
+            case "viewData":
+                List<CartItem> cartList = cartDAO.getCartByUser(userId);
+                double grandTotal = 0;
+                int itemQty = 0;
+                double itemTotal = 0;
+
+                if (menuIdStr != null && !menuIdStr.isEmpty()) {
+                    for (CartItem c : cartList) {
+                        grandTotal += c.getPrice() * c.getQuantity();
+                        if (c.getMenuId() == menuId) {
+                            itemQty = c.getQuantity();
+                            itemTotal = c.getPrice() * itemQty;
+                        }
+                    }
+                } else {
+                    for (CartItem c : cartList) {
+                        grandTotal += c.getPrice() * c.getQuantity();
+                    }
+                }
+
+                // Plain text format: qty|itemTotal|grandTotal
+                String result = itemQty + "|" + itemTotal + "|" + grandTotal;
+                response.getWriter().write(result);
+                return;
+
+            default:
+                message = "fail: unknown action";
+        }
+
+        if (action.equals("add") || action.equals("delete") || action.equals("clear")) {
+            // Update session cart count if operation succeeded
+            if (success) {
+                int cartCount = cartDAO.getCartItemCount(userId);
+                session.setAttribute("cartCount", cartCount);
+            }
+            response.getWriter().write(message);
+        }
+
+    } catch (NumberFormatException e) {
+        response.getWriter().write("fail: invalid number format");
+        e.printStackTrace();
+    } catch (Exception e) {
+        response.getWriter().write("fail: unexpected error");
+        e.printStackTrace();
+    }
+}
+
+@Override
+protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    doPost(request, response);
+}
+
+
+}

@@ -1,0 +1,93 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="com.foodapp.model.Restaurant" %>
+<%@ page import="com.foodapp.dao.RestaurantDAO" %>
+<%@ page import="com.foodapp.dao.impl.RestaurantDAOImpl" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodExpress - Order Food Online</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <a href="home.jsp">
+                        <img src="images/logo.png" alt="FoodExpress Logo" height="50">
+                    </a>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="home.jsp">Home</a></li>
+                    <li><a href="cart.jsp">Cart</a></li>
+                    <li><a href="login.jsp">Login</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero + Search -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Order food from your favourite restaurants near you.</h1>
+                <p>Get your food delivered in minutes</p>
+                <div class="search-box">
+                    <form action="search.jsp" method="get">
+                        <input type="text" name="location" placeholder="Enter your delivery location" class="location-input">
+                        <input type="text" name="query" placeholder="Search for restaurant or cuisine" class="search-input">
+                        <button type="submit" class="btn-search">Find Food</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dynamic Restaurants -->
+    <section class="restaurants">
+        <div class="container">
+            <h2 class="section-title">Top Restaurants</h2>
+            <div class="restaurant-grid">
+                <%
+                    RestaurantDAO restaurantDAO = new RestaurantDAOImpl();
+                    List<Restaurant> restaurants = restaurantDAO.getActiveRestaurants();
+                    if (restaurants != null && !restaurants.isEmpty()) {
+                        for (Restaurant r : restaurants) {
+                %>
+                <div class="restaurant-card">
+                    <div class="restaurant-image" style="background: url('<%= r.getImagePath() != null ? r.getImagePath() : "images/default.jpg" %>'); background-size: cover; background-position: center;"></div>
+                    <div class="restaurant-info">
+                        <h3><%= r.getName() %></h3>
+                        <div class="restaurant-meta">
+                            <span class="delivery-time"><%= r.getDeliveryTime() %></span>
+                        </div>
+                        <p class="cuisine-type"><%= r.getCuisineType() %></p>
+                        <a href="menu.jsp?restaurantId=<%= r.getRestaurantId() %>" class="btn-primary">View Menu</a>
+                    </div>
+                </div>
+                <%
+                        }
+                    } else {
+                %>
+                    <p>No active restaurants available.</p>
+                <%
+                    }
+                %>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 FoodExpress. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
